@@ -1,0 +1,39 @@
+---
+title: "Data preparation"
+output: html_document
+---
+
+Сonvert data to csv format to read it easily with R and remove unuseful columns from it
+
+```{r}
+data <- read.csv("../data/IAD30284_384WellPlateDataSheet.csv", header = TRUE, skip = 14)
+data <- data[data$Amplicon_ID != "Blank", ]
+data$X384Well_Row <- NULL
+data$X384Well_Col <- NULL
+data$Gene_Symbol <- NULL
+data$Genome_Version <- NULL
+data$LineItem_Type <- NULL
+```
+
+Get amplicon sequence that lies between primers
+```{r}
+library(jsonlite)
+library(httr)
+n <- nrow(data)
+chromosomes <- data$Chr
+beginings <- data$Insert_Start
+endings <- data$Insert_Stop
+ampliconInnerPart <- rep("", n)
+for (i in 1:n){
+  call <- paste(c("http://178.79.134.178/refservice/references/GRCh37.p13/sequence?contig=", as.character(chromosomes[i]),
+                         "&start=",as.character(beginings[i]),"&end=",as.character(endings[i])), collapse = "")
+  call
+  jsonData <- fromJSON(call)
+  ampliconInnerPart[i] <- jsonData$sequence
+}
+head(ampliconInnerPart)
+data$Amplicon_Inner_Part = ampliconInnerPart
+```
+
+
+
