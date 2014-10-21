@@ -1,7 +1,5 @@
----
-title: "Data preparation"
-output: html_document
----
+
+## Data preparation
 
 Сonvert data to csv format to read it easily with R and remove unuseful columns from it
 
@@ -32,8 +30,182 @@ for (i in 1:n){
   ampliconInnerPart[i] <- jsonData$sequence
 }
 head(ampliconInnerPart)
-data$Amplicon_Inner_Part = ampliconInnerPart
+data$Amplicon_Inner_Part <- ampliconInnerPart
+```
+
+Get dangling ends
+```{r}
+danglingEndStart <- rep("", n)
+danglingEndStop <- rep("", n)
+for (i in 1:n){
+  call <- paste(c("http://178.79.134.178/refservice/references/GRCh37.p13/sequence?contig=", as.character(chromosomes[i]),
+                         "&start=",as.character(beginings[i]-1),"&end=",as.character(beginings[i]-1)), collapse = "")
+  jsonData <- fromJSON(call)
+  danglingEndStart[i] <- jsonData$sequence
+  call <- paste(c("http://178.79.134.178/refservice/references/GRCh37.p13/sequence?contig=", as.character(chromosomes[i]),
+                         "&start=",as.character(endings[i]+1),"&end=",as.character(endings[i]+1)), collapse = "")
+  jsonData <- fromJSON(call)
+  danglingEndStop[i] <- jsonData$sequence
+}
+data$Start_Dangling_End <- danglingEndStart
+data$Stop_Dangling_End <- danglingEndStop
+```
+
+Load results and get a proportion for each
+```{r}
+result <- read.csv("../data/result.csv", header = TRUE)
+result$Gene <- NULL
+result$sam <- NULL
+sums <- colSums(result[,-1])
+proportion_result <- sweep(result[,-1], 2, sums, '/' )
+#proportion_result <- sapply(proportion_result, function(x) log(x))
+proportion_result$Means <- rowMeans(proportion_result)
+proportion_result$Target <- result$Target
+y <- data.frame(Target = character(127))
+y$Target <- result$Target
+y$logresult <- log(proportion_result$IonXpress_8_Run_18_hg19_v3)
+y$logMeans <- log(proportion_result$Means)
+y$result <- proportion_result$IonXpress_8_Run_18_hg19_v3
+y$Means <- proportion_result$Means
+y[y$logMeans == -Inf,]$logMeans <- -10
+y[y$logresult == -Inf,]$logresult <- -10
+rownames(y) <- y$Target
+```
+Prepare features
+```{r}
+prepared_data <- data.frame(Target = character(172))
+prepared_data$Target <- data$Amplicon_ID
+
+prepared_data$Start_Dangling_End <- data$Start_Dangling_End
+prepared_data$Stop_Dangling_End <- data$Stop_Dangling_End
+
+prepared_data$Primer_Len <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x) nchar(x)))
+
+prepared_data$Amplicon_Len <- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) nchar(x)))
+prepared_data$END_3 <- as.character(lapply(data$Amplicon_Inner_Part, function(x) substr(x, nchar(x), nchar(x))))
+countCharOccurrences <- function(char, s) {s2 <- gsub(char,"",s);return (nchar(s) - nchar(s2))}
+countGCcontent <- function(x){ gg <- countCharOccurrences('G',x); cc <-countCharOccurrences('C',x); aa <- countCharOccurrences('A',x); tt <- countCharOccurrences('T',x); (cc+gg)*100/(aa+tt+cc+gg) }
+
+```
+
+
+```{r}
+prepared_data$Primer_GC_content <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x)  countGCcontent(x)))
+prepared_data$Amplicon_GC_content <- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) countGCcontent(x)))
+rownames(prepared_data) <- prepared_data$Target
+valid_names <- intersect(y$Target, data$Amplicon_ID)
+prepared_data <- prepared_data[valid_names,]
+prepared_data$Start_Dangling_End <- as.factor(prepared_data$Start_Dangling_End)
+prepared_data$Stop_Dangling_End <- as.factor(prepared_data$Stop_Dangling_End)
+prepared_data$END_3 <- as.factor(prepared_data$END_3)
+y <- y[valid_names,]
+```
+
+```{r}
+library(lattice)
+bwplot(prepared_data$END_3 ~ y$logMeans,     ylab="nucleotids", xlab="log of amplicon percental amount", 
+       main="3' end")
+bwplot(prepared_data$Start_Dangling_End ~ y$logMeans,     ylab="nucleotids", xlab="log of amplicon percental amount", 
+       main="First dangling end")
+bwplot(prepared_data$Stop_Dangling_End ~ y$logMeans,     ylab="nucleotids", xlab="log of amplicon percental amount", 
+       main="Second dangling end")
+bwplot(prepared_data$END_3 ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
+        main="3' end")
+bwplot(prepared_data$Start_Dangling_End ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
+      main="First dangling end")
+bwplot(prepared_data$Stop_Dangling_End ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
+       main="Second dangling end")
+xyplot(y$logMeans ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="log of amplicon percental amount", main="Amplicon GC-content")
+xyplot(y$logMeans ~ prepared_data$Primer_GC_content,  xlab="GC-content(%)", ylab="log of amplicon percental amount", main="Primer GC-content")
+xyplot(y$logMeans ~ prepared_data$Primer_Len,  xlab="Length", ylab="log of amplicon percental amount", main="Primer length")
+xyplot(y$logMeans ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="log of amplicon percental amount", main="Amplicon length")
+xyplot(y$Means ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="amplicon percental amount", main="Amplicon GC-content")
+xyplot(y$Means ~ prepared_data$Primer_GC_content,  xlab="GC-content(%)", ylab="amplicon percental amount", main="Amplicon GC-content")
+xyplot(y$Means ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="amplicon percental amount", main="Amplicon length")
+xyplot(y$Means ~ prepared_data$Primer_Len,  xlab="Length", ylab="amplicon percental amount", main="Primer length")
+
+histogram(~y$logMeans|factor(prepared_data$Start_Dangling_End))
+```
+
+```{r}
+prepared_data$res <- y$Means
+prepared_data$logres <- y$logMeans
+write.table(prepared_data, "../data/features.tsv", col.names = TRUE, sep = "\t", row.names = FALSE)
+```
+
+Use all features to train model
+```{r}
+library(randomForest)
+splitdf <- function(dataframe, n = 2, seed=NULL) {
+    if (!is.null(seed)) set.seed(seed)
+    index <- 1:nrow(dataframe)
+    trainindex <- sample(index, trunc(length(index)*(n-1)/n))
+    trainset <- dataframe[trainindex, ]
+    testset <- dataframe[-trainindex, ]
+    list(trainset=trainset,testset=testset)
+}
+splited <- splitdf(prepared_data)
+trainSet <- splited$trainset
+testSet <- splited$testset
+formula <- res ~ Amplicon_Len + Amplicon_GC_content + END_3+Start_Dangling_End+Stop_Dangling_End + Primer_Len +Primer_GC_content
+rf <- randomForest(formula, trainSet)
+importance(rf)
+fit <- lm(formula, data=trainSet)
+#plot(fit)
+predicted <- predict(fit, newdata = testSet)
+rmse <- function(error)
+{
+    sqrt(mean(error^2))
+}
+mean(testSet$res)
+sd(testSet$res)
+rmse(predicted - testSet$res)
+predicted <- predict(rf, newdata = testSet)
+rmse(predicted - testSet$res)
+```
+
+
+Use only amplicon information and 3' end to train model
+```{r}
+formula <- res ~ Amplicon_Len + Amplicon_GC_content + END_3
+rf <- randomForest(formula, trainSet)
+importance(rf)
+fit <- lm(formula, data=trainSet)
+#plot(fit)
+predicted <- predict(fit, newdata = testSet)
+mean(testSet$res)
+rmse(predicted - testSet$res)
+predicted <- predict(rf, newdata = testSet)
+rmse(predicted - testSet$res)
 ```
 
 
 
+Use only amplicon information to train model
+```{r}
+formula <- res ~ Amplicon_Len + Amplicon_GC_content
+rf <- randomForest(formula, trainSet)
+importance(rf)
+fit <- lm(formula, data=trainSet)
+#plot(fit)
+predicted <- predict(fit, newdata = testSet)
+mean(testSet$res)
+rmse(predicted - testSet$res)
+predicted <- predict(rf, newdata = testSet)
+rmse(predicted - testSet$res)
+```
+
+
+Use other to train model
+```{r}
+formula <- res ~ END_3+Start_Dangling_End+Stop_Dangling_End + Primer_Len +Primer_GC_content
+rf <- randomForest(formula, trainSet)
+importance(rf)
+fit <- lm(formula, data=trainSet)
+#plot(fit)
+predicted <- predict(fit, newdata = testSet)
+mean(testSet$res)
+rmse(predicted - testSet$res)
+predicted <- predict(rf, newdata = testSet)
+rmse(predicted - testSet$res)
+```
