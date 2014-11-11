@@ -121,32 +121,133 @@ rownames(totalTable) <- totalTable$Target
 rownames(totalTableOfMeans) <- totalTableOfMeans$Target
 rownames(totalTableOflogMeans) <- totalTableOflogMeans$Target
 ```
-Prepare features
+
+(1) Get dangling ends
 ```{r}
 prepared_data <- data.frame(Target = character(172))
 prepared_data$Target <- data$Amplicon_ID
 
 prepared_data$Start_Dangling_End <- data$Start_Dangling_End
 prepared_data$Stop_Dangling_End <- data$Stop_Dangling_End
+prepared_data$Start_Dangling_End <- as.factor(prepared_data$Start_Dangling_End)
+prepared_data$Stop_Dangling_End <- as.factor(prepared_data$Stop_Dangling_End)
 
+```
+
+(1) Get lengths of amplicon and primers
+```{r}
 prepared_data$Fwd_Primer_Len <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x) nchar(x)))
 prepared_data$Rev_Primer_Len <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Rev_Primer.), function(x) nchar(x)))
 prepared_data$Amplicon_Len <- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) nchar(x)))
+```
 
+(1) Get 3'-ends of amplicon
+```{r}
 prepared_data$Fwd_END_3 <- as.character(lapply(data$Amplicon_Inner_Part, function(x) substr(x, nchar(x), nchar(x))))
 prepared_data$Rev_END_3 <- as.character(lapply(data$Amplicon_Inner_Part, function(x) substr(x, 1, 1)))
+prepared_data$Fwd_END_3 <- as.factor(prepared_data$Fwd_END_3)
+prepared_data$Rev_END_3 <- as.factor(prepared_data$Rev_END_3)
+```
+
+(1) Get GC-content
+```{r}
 countCharOccurrences <- function(char, s) {s2 <- gsub(char,"",s);return (nchar(s) - nchar(s2))}
 countGCcontent <- function(x){ gg <- countCharOccurrences('G',x); cc <-countCharOccurrences('C',x); aa <- countCharOccurrences('A',x); tt <- countCharOccurrences('T',x); (cc+gg)*100/(aa+tt+cc+gg) }
 prepared_data$Fwd_Primer_GC_content <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x)  countGCcontent(x)))
 prepared_data$Rev_Primer_GC_content <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Rev_Primer.), function(x)  countGCcontent(x)))
 prepared_data$Amplicon_GC_content <- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) countGCcontent(x)))
+```
+
+(2) Get Max Poly-X (maximum allowable length of a mononucleotide repeat)
+```{r, echo=FALSE}
+getMaxPolyX <- function(str){
+  n <- 0
+  nmax <- 0
+  p <- 'N'
+  for (c in 1:nchar(str)){
+    if (p == substr(str, c, c)) {
+      n <- n+1
+    }else{
+      if (n > nmax) {
+        nmax <- n
+      }
+      n <- 0
+    }
+    p <- substr(str, c, c)
+  }
+  nmax
+}
+```
+```{r}
+prepared_data$Fwd_Primer_MaxPolyX <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x) getMaxPolyX(x)))
+prepared_data$Rev_Primer_MaxPolyX <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Rev_Primer.), function(x) getMaxPolyX(x)))
+prepared_data$Amplicon_MaxPolyX <- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) getMaxPolyX(x)))
+```
+
+(2) Get amplicon sequence entropy
+```{r, echo=FALSE}
+getEntropy <- function(str){
+  h <- 0
+  for (c in 1:nchar(str)){
+    p <- substr(str, c, c)
+    if (p == "A"){
+      h <- h - 0.295*log(0.295)
+    }
+    if (p == "C"){
+      h <- h - 0.205*log(0.205)
+    }
+    if (p == "G"){
+      h <- h - 0.205*log(0.205)
+    }
+    if (p == "T"){
+      h <- h - 0.295*log(0.295)
+    }
+  }
+  h
+}
+```
+```{r}
+prepared_data$Fwd_Primer_Entropy <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x) getEntropy(x)))
+prepared_data$Rev_Primer_Entropy <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Rev_Primer.), function(x) getEntropy(x)))
+prepared_data$Amplicon_Entropy <- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) getEntropy(x)))
+```
+
+(2) Get hash of primer and amplicon sequences
+```{r, echo=FALSE, warning=FALSE}
+getHash <- function(str){
+  hash <- 0
+  mod <- 63018038201
+  st <- 1
+  for (c in 1:nchar(str)){
+    p <- substr(str, c, c)
+    if (p == "A"){
+      hash <- hash %% mod
+    }
+    if (p == "C"){
+      hash <- (hash + st) %% mod
+    }
+    if (p == "G"){
+      hash <- (hash + 2*st) %% mod
+    }
+    if (p == "T"){
+      hash <- (hash + 3*st) %% mod
+    }
+    st <- (st*4)%% mod
+  }
+  hash
+}
+```
+```{r, warning=FALSE}
+prepared_data$Fwd_Primer_Hash <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x) getHash(x)))
+prepared_data$Rev_Primer_Hash <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Rev_Primer.), function(x) getHash(x)))
+prepared_data$Amplicon_Hash <- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) getHash(x)))
+```
+
+Get intersection of given amplicons and amplicons from experiments
+```{r}
 rownames(prepared_data) <- prepared_data$Target
 valid_names <- intersect(y$Target, data$Amplicon_ID)
 prepared_data <- prepared_data[valid_names,]
-prepared_data$Start_Dangling_End <- as.factor(prepared_data$Start_Dangling_End)
-prepared_data$Stop_Dangling_End <- as.factor(prepared_data$Stop_Dangling_End)
-prepared_data$Fwd_END_3 <- as.factor(prepared_data$Fwd_END_3)
-prepared_data$Rev_END_3 <- as.factor(prepared_data$Rev_END_3)
 y <- y[valid_names,]
 ylog <- ylog[valid_names,]
 totalTable <- totalTable[valid_names,]
@@ -154,425 +255,13 @@ totalTableOfMeans <- totalTableOfMeans[valid_names,]
 totalTableOflogMeans <- totalTableOflogMeans[valid_names,]
 ```
 
-Graphics of dependencies of result on different features
-```{r}
-library(lattice)
-
-xyplot(ylog$Means ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="log of amplicon percental amount", main="Amplicon GC-content")
-xyplot(ylog$Means ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="log of amplicon percental amount", main="Amplicon length")
-xyplot(ylog$Means ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="log of amplicon percental amount", main="Forward Primer GC-content")
-xyplot(ylog$Means ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="log of amplicon percental amount", main="Forward Primer length")
-xyplot(ylog$Means ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="log of amplicon percental amount", main="Reverse Primer GC-content")
-xyplot(ylog$Means ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="log of amplicon percental amount", main="Reverse Primer length")
-
-
-xyplot(y$Means ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="amplicon percental amount", main="Amplicon GC-content")
-xyplot(y$Means ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="amplicon percental amount", main="Amplicon length")
-xyplot(y$Means ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="amplicon percental amount", main="Forward Primer GC-content")
-xyplot(y$Means ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="amplicon percental amount", main="Forward Primer length")
-xyplot(y$Means ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="amplicon percental amount", main="Reverse Primer GC-content")
-xyplot(y$Means ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="amplicon percental amount", main="Reverse Primer length")
-
-
-xyplot(totalTable$mean ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="mean of amplicon percental amount", main="Amplicon GC-content")
-xyplot(totalTable$mean ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Amplicon length")
-xyplot(totalTable$mean ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="mean of amplicon percental amount", main="Forward Primer GC-content")
-xyplot(totalTable$mean ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Forward Primer length")
-xyplot(totalTable$mean ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="mean of  amplicon percental amount", main="Reverse Primer GC-content")
-xyplot(totalTable$mean ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Reverse Primer length")
-
-xyplot(totalTable$sd ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="sd of amplicon percental amount", main="Amplicon GC-content")
-xyplot(totalTable$sd ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Amplicon length")
-xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="sd of amplicon percental amount", main="Forward Primer GC-content")
-xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Forward Primer length")
-xyplot(totalTable$sd ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="sd of  amplicon percental amount", main="Reverse Primer GC-content")
-xyplot(totalTable$sd ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Reverse Primer length")
-
-xyplot(log(totalTable$mean) ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="mean of amplicon percental amount", main="Amplicon GC-content")
-xyplot(log(totalTable$mean) ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Amplicon length")
-xyplot(log(totalTable$mean) ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="mean of amplicon percental amount", main="Forward Primer GC-content")
-xyplot(log(totalTable$mean) ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Forward Primer length")
-xyplot(log(totalTable$mean) ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="mean of  amplicon percental amount", main="Reverse Primer GC-content")
-xyplot(log(totalTable$mean) ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Reverse Primer length")
-
-xyplot(totalTable$sd ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="sd of amplicon percental amount", main="Amplicon GC-content")
-xyplot(totalTable$sd ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Amplicon length")
-xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="sd of amplicon percental amount", main="Forward Primer GC-content")
-xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Forward Primer length")
-xyplot(totalTable$sd ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="sd of  amplicon percental amount", main="Reverse Primer GC-content")
-xyplot(totalTable$sd ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Reverse Primer length")
-```
-
-
-```{r}
- histogram(~ylog$Means|factor(prepared_data$Start_Dangling_End))
-```
-
-Graphics of dependencies of standard variation of result 
-```{r}
-bwplot(prepared_data$Fwd_END_3 ~ ylog$Means,     ylab="nucleotids", xlab="log of amplicon percental amount", 
-       main="Forward primer 3' end")
-bwplot(prepared_data$Rev_END_3 ~ ylog$Means,     ylab="nucleotids", xlab="log of amplicon percental amount", 
-       main="Reverse primer 3' end")
-bwplot(prepared_data$Start_Dangling_End ~ ylog$Means,     ylab="nucleotids", xlab="log of amplicon percental amount", 
-       main="First dangling end")
-bwplot(prepared_data$Stop_Dangling_End ~ ylog$Means,     ylab="nucleotids", xlab="log of amplicon percental amount", 
-       main="Second dangling end")
-
-bwplot(prepared_data$Fwd_END_3 ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
-        main="Forward primer 3' end")
-bwplot(prepared_data$Rev_END_3 ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
-        main="Reverse primer 3' end")
-bwplot(prepared_data$Start_Dangling_End ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
-      main="First dangling end")
-bwplot(prepared_data$Stop_Dangling_End ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
-       main="Second dangling end")
-
-
-bwplot(prepared_data$Fwd_END_3 ~ totalTable$sd,     ylab="nucleotids", xlab="standard deviation of amplicon percental amount", 
-        main="Forward primer 3' end")
-bwplot(prepared_data$Rev_END_3 ~ totalTable$sd,     ylab="nucleotids", xlab="standard deviation of amplicon percental amount", 
-        main="Reverse primer 3' end")
-bwplot(prepared_data$Start_Dangling_End ~ totalTable$sd,     ylab="nucleotids", xlab="standard deviation of amplicon percental amount", 
-      main="First dangling end")
-bwplot(prepared_data$Stop_Dangling_End ~ totalTable$sd,     ylab="nucleotids", xlab="standard deviation of amplicon percental amount", 
-       main="Second dangling end")
-
-
-bwplot(prepared_data$Fwd_END_3 ~ totalTable$mean,     ylab="nucleotids", xlab="mean of amplicon percental amount", 
-        main="Forward primer 3' end")
-bwplot(prepared_data$Rev_END_3 ~ totalTable$mean,     ylab="nucleotids", xlab="mean of amplicon percental amount", 
-        main="Reverse primer 3' end")
-bwplot(prepared_data$Start_Dangling_End ~ totalTable$mean,     ylab="nucleotids", xlab="mean of amplicon percental amount", 
-      main="First dangling end")
-bwplot(prepared_data$Stop_Dangling_End ~ totalTable$mean,     ylab="nucleotids", xlab="mean of amplicon percental amount", 
-       main="Second dangling end")
-
-amplicon_len <- prepared_data$Amplicon_Len
-q <- quantile(amplicon_len, probs = c(1/4, 1/2, 3/4, 1))
-amplicon_len[amplicon_len <= q[1]] <- q[1]
-amplicon_len[amplicon_len > q[1] & amplicon_len <= q[2]] <- q[2]
-amplicon_len[amplicon_len > q[2] & amplicon_len <= q[3]] <- q[3]
-amplicon_len[amplicon_len > q[3]] <- q[4]
-histogram(amplicon_len)
-bwplot(amplicon_len ~ y$Means,     ylab="length", xlab="amplicon percental amount", 
-       main="Amplicon length")
-
-bwplot(amplicon_len ~ ylog$Means,     ylab="length", xlab="log of amplicon percental amount", 
-       main="Amplicon length")
-
-bwplot(amplicon_len ~ totalTable$sd,     ylab="length",  xlab="standard deviation of amplicon percental amount", 
-       main="Amplicon length")
-
-bwplot(amplicon_len ~ totalTable$mean,     ylab="length",  xlab="mean of amplicon percental amount", 
-       main="Amplicon length")
-
-amplicon_gc <- prepared_data$Amplicon_GC_content
-q <- quantile(amplicon_gc, probs = c(1/4, 1/2, 3/4, 1))
-amplicon_gc[amplicon_gc <= q[1]] <- q[1]
-amplicon_gc[amplicon_gc > q[1] & amplicon_gc <= q[2]] <- q[2]
-amplicon_gc[amplicon_gc > q[2] & amplicon_gc <= q[3]] <- q[3]
-amplicon_gc[amplicon_gc > q[3]] <- q[4]
-histogram(amplicon_gc)
-bwplot(amplicon_gc ~ y$Means,     ylab="GC-content", xlab="amplicon percental amount", 
-       main="Amplicon GC-content")
-
-bwplot(amplicon_gc ~ ylog$Means,   ylab="GC-content", xlab="log of amplicon percental amount", 
-       main="Amplicon GC-content")
-
-bwplot(amplicon_gc ~ totalTable$sd,  ylab="GC-content",  xlab="standard deviation of amplicon percental amount", 
-       main="Amplicon GC-content")
-
-bwplot(amplicon_gc ~ totalTable$mean,  ylab="GC-content",  xlab="mean of amplicon percental amount", 
-       main="Amplicon GC-content")
-
-primer_len <- prepared_data$Fwd_Primer_Len
-q <- quantile(primer_len, probs = c(1/4, 1/2, 3/4, 1))
-primer_len[primer_len <= q[1]] <- q[1]
-primer_len[primer_len > q[1] & primer_len <= q[2]] <- q[2]
-primer_len[primer_len > q[2] & primer_len <= q[3]] <- q[3]
-primer_len[primer_len > q[3]] <- q[4]
-histogram(primer_len)
-bwplot(primer_len ~ y$Means,     ylab="length", xlab="primer percental amount", 
-       main="Forward Primer length")
-
-bwplot(primer_len ~ ylog$Means,   ylab="length", xlab="log of amplicon percental amount", 
-       main="Forward Primer length")
-
-bwplot(primer_len ~ totalTable$sd,  ylab="length",  xlab="standard deviation of amplicon percental amount", 
-       main="Forward Primer length")
-
-bwplot(primer_len ~ totalTable$mean,  ylab="length",  xlab="mean of amplicon percental amount", 
-       main="Forward Primer length")
-
-primer_gc <- prepared_data$Fwd_Primer_GC_content
-q <- quantile(primer_gc, probs = c(1/4, 1/2, 3/4, 1))
-primer_gc[primer_gc <= q[1]] <- q[1]
-primer_gc[primer_gc > q[1] & primer_gc <= q[2]] <- q[2]
-primer_gc[primer_gc > q[2] & primer_gc <= q[3]] <- q[3]
-primer_gc[primer_gc > q[3]] <- q[4]
-bwplot(primer_gc ~ y$Means,     ylab="GC-content", xlab="primer percental amount", 
-       main="Forward Primer GC-content")
-
-bwplot(primer_gc ~ ylog$Means,   ylab="GC-content", xlab="log of amplicon percental amount", 
-       main="Forward Primer GC-content")
-
-bwplot(primer_gc ~ totalTable$sd,  ylab="GC-content",  xlab="standard deviation of amplicon percental amount", 
-       main="Forward Primer GC-content")
-
-bwplot(primer_gc ~ totalTable$mean,  ylab="GC-content",  xlab="mean of amplicon percental amount", 
-       main="Forward Primer GC-content")
-
-primer_len <- prepared_data$Rev_Primer_Len
-q <- quantile(primer_len, probs = c(1/4, 1/2, 3/4, 1))
-primer_len[primer_len <= q[1]] <- q[1]
-primer_len[primer_len > q[1] & primer_len <= q[2]] <- q[2]
-primer_len[primer_len > q[2] & primer_len <= q[3]] <- q[3]
-primer_len[primer_len > q[3]] <- q[4]
-histogram(primer_len)
-bwplot(primer_len ~ y$Means,     ylab="length", xlab="primer percental amount", 
-       main="Reverse Primer length")
-
-bwplot(primer_len ~ ylog$Means,   ylab="length", xlab="log of amplicon percental amount", 
-       main="Reverse Primer length")
-
-bwplot(primer_len ~ totalTable$sd,  ylab="length",  xlab="standard deviation of amplicon percental amount", 
-       main="Reverse Primer length")
-
-bwplot(primer_len ~ totalTable$mean,  ylab="length",  xlab="mean of amplicon percental amount", 
-       main="Reverse Primer length")
-
-primer_gc <- prepared_data$Rev_Primer_GC_content
-q <- quantile(primer_gc, probs = c(1/4, 1/2, 3/4, 1))
-primer_gc[primer_gc <= q[1]] <- q[1]
-primer_gc[primer_gc > q[1] & primer_gc <= q[2]] <- q[2]
-primer_gc[primer_gc > q[2] & primer_gc <= q[3]] <- q[3]
-primer_gc[primer_gc > q[3]] <- q[4]
-bwplot(primer_gc ~ y$Means,     ylab="GC-content", xlab="primer percental amount", 
-       main="Reverse Primer GC-content")
-
-bwplot(primer_gc ~ ylog$Means,   ylab="GC-content", xlab="log of amplicon percental amount", 
-       main="Reverse Primer GC-content")
-
-bwplot(primer_gc ~ totalTable$sd,  ylab="GC-content",  xlab="standard deviation of amplicon percental amount", 
-       main="Reverse Primer GC-content")
-
-bwplot(primer_gc ~ totalTable$mean,  ylab="GC-content",  xlab="mean of amplicon percental amount", 
-       main="Reverse Primer GC-content")
-
-```
-
+Save features to tsv file
 ```{r}
 prepared_data$res <- y$Means
 prepared_data$logres <- ylog$Means
 prepared_data$sd <- totalTable$sd
 prepared_data$mean <- totalTable$mean
 prepared_data$MeansSD <- totalTableOfMeans$sd
-write.table(prepared_data, "../data/features.tsv", col.names = TRUE, sep = "\t", row.names = FALSE)
+write.table(prepared_data, "../data/features.tsv", col.names = TRUE, sep = "\t", row.names = FALSE, quote = FALSE)
 ```
 
-Use all features to train model
-```{r}
-library(randomForest)
-splitdf <- function(dataframe, n = 4, seed=NULL) {
-    if (!is.null(seed)) set.seed(seed)
-    index <- 1:nrow(dataframe)
-    trainindex <- sample(index, trunc(length(index)/n))
-    trainset <- dataframe[trainindex, ]
-    testset <- dataframe[-trainindex, ]
-    list(trainset=trainset,testset=testset)
-}
-splited <- splitdf(prepared_data)
-trainSet <- splited$trainset
-testSet <- splited$testset
-formula <- res ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3 +Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse <- function(error)
-{
-    sqrt(mean(error^2))
-}
-sd(testSet$res)
-rmse(predicted - testSet$res)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$res)
-```
-
-
-Use only amplicon information and 3' end to train model
-```{r}
-formula <- mean ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse(predicted - testSet$mean)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$mean)
-```
-
-Use only amplicon information and 3' end to train model
-```{r}
-formula <- sd ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse(predicted - testSet$sd)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$sd)
-```
-
-Use only amplicon information and 3' end to train model
-```{r}
-formula <- res ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse(predicted - testSet$res)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$res)
-```
-
-
-
-Use only amplicon information to train model
-```{r}
-formula <- res ~ Amplicon_Len + Amplicon_GC_content
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-mean(testSet$res)
-rmse(predicted - testSet$res)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$res)
-```
-
-
-Use other to train model
-```{r}
-formula <- res ~ Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+Rev_Primer_Len +Rev_Primer_GC_content
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse(predicted - testSet$res)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$res)
-```
-
-
-Different feature selection tests
-```{r}
-library(FSelector)
-formula <- res ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content
-chi.squared(formula, data = prepared_data)
-chi <- chi.squared(formula, data = prepared_data)
-chi$names <- rownames(chi)
-chi <- chi[order(-chi$attr_importance), ]
-barchart( chi$names ~ chi$attr_importance)
-information.gain(formula, data = prepared_data)
-gain.ratio(formula, data = prepared_data)
-symmetrical.uncertainty(formula, data = prepared_data)
-oneR(formula, data = prepared_data)
-random.forest.importance(formula, data = prepared_data, importance.type = 1)
-```
-
-Different feature selection tests
-```{r}
-library(FSelector)
-formula <- MeansSD ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3 +Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content
-chi.squared(formula, data = prepared_data)
-chi <- chi.squared(formula, data = prepared_data)
-chi$names <- rownames(chi)
-chi <- chi[order(-chi$attr_importance), ]
-barchart( chi$names ~ chi$attr_importance, main = "Chi-squared test", xlab = "Feature improtance")
-information.gain(formula, data = prepared_data)
-gain.ratio(formula, data = prepared_data)
-symmetrical.uncertainty(formula, data = prepared_data)
-oneR(formula, data = prepared_data)
-random.forest.importance(formula, data = prepared_data, importance.type = 1)
-```
-
-Different feature selection tests
-```{r}
-library(FSelector)
-histogram(prepared_data$sd)
-sd(prepared_data$sd)
-formula <- sd ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content
-chi.squared(formula, data = prepared_data)
-chi <- chi.squared(formula, data = prepared_data)
-chi$names <- rownames(chi)
-chi <- chi[order(-chi$attr_importance), ]
-barchart( chi$names ~ chi$attr_importance, main = "Chi-squared test", xlab = "Feature improtance")
-information.gain(formula, data = prepared_data)
-gain.ratio(formula, data = prepared_data)
-symmetrical.uncertainty(formula, data = prepared_data)
-oneR(formula, data = prepared_data)
-random.forest.importance(formula, data = prepared_data, importance.type = 1)
-```
-
-```{r}
-library(FSelector)
-histogram(prepared_data$mean)
-sd(prepared_data$mean)
-formula <- mean ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content
-chi.squared(formula, data = prepared_data)
-chi <- chi.squared(formula, data = prepared_data)
-chi$names <- rownames(chi)
-chi <- chi[order(-chi$attr_importance), ]
-barchart( chi$names ~ chi$attr_importance, main = "Chi-squared test", xlab = "Feature improtance")
-information.gain(formula, data = prepared_data)
-gain.ratio(formula, data = prepared_data)
-symmetrical.uncertainty(formula, data = prepared_data)
-oneR(formula, data = prepared_data)
-random.forest.importance(formula, data = prepared_data, importance.type = 1)
-```
-
-Feature subset selection tests
-```{r}
-library(corrplot)
-prepared_data_num <- prepared_data
-prepared_data_num$Start_Dangling_End <- as.numeric(prepared_data_num$Start_Dangling_End)
-prepared_data_num$Stop_Dangling_End <- as.numeric(prepared_data_num$Stop_Dangling_End)
-prepared_data_num$Fwd_END_3 <- as.numeric(prepared_data_num$Fwd_END_3)
-prepared_data_num$Rev_END_3 <- as.numeric(prepared_data_num$Rev_END_3)
-prepared_data_num$res <- NULL
-prepared_data_num$logres <- NULL
-prepared_data_num$MeansSD <- NULL
-prepared_data.scale<- scale(prepared_data_num[2:ncol(prepared_data_num)], center=TRUE, scale=TRUE)
-cor_prepared_data <- cor(prepared_data.scale)
-corrplot(cor_prepared_data, order = "original")
-library(cvTools)
-library(caret)
-# control <- trainControl(method="repeatedcv", number=10, repeats=3)
-# model <- train(res~., data=prepared_data, method="lvq", preProcess="scale", trControl=control)
-# # estimate variable importance
-# importance <- varImp(model, scale=FALSE)
-# # summarize importance
-# print(importance)
-# # plot importance
-# plot(importance)
-evaluator <- function(subset) {
-    formula <- mean ~ . 
-    valid_names <- c(subset,"res")
-    rf <- randomForest(formula, prepared_data[,valid_names])
-    result <- cvFit(rf, data =  prepared_data[,valid_names], y =  prepared_data[,valid_names]$res, cost = rtmspe,
-        K = 5, R = 10, costArgs = list(trim = 0.1), seed = 1234)
-    return(1-result$cv)
-}
-
-#perform the best subset search
-#subset <- exhaustive.search(names(prepared_data[-c(1, 11)]), evaluator)
-#subset <- best.first.search(names(prepared_data[-c(1, 11)]), evaluator)
-```

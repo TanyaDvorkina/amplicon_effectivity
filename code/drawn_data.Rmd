@@ -1,0 +1,248 @@
+
+Load prepared data
+```{r}
+prepared_data <- read.table("../data/features.tsv", sep = "\t", header=TRUE)
+totalTable <- NULL
+totalTable$sd <- prepared_data$sd
+totalTable$mean <- prepared_data$mean
+totalTableOfMeans <- NULL
+totalTableOfMeans$sd <- prepared_data$MeansSD
+y <- NULL
+y$Means <- prepared_data$res
+ylog <- NULL
+ylog$Means <- prepared_data$logres
+```
+
+Graphics of dependencies of result on different features
+```{r}
+library(lattice)
+
+xyplot(ylog$Means ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="log of amplicon percental amount", main="Amplicon GC-content")
+xyplot(ylog$Means ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="log of amplicon percental amount", main="Amplicon length")
+xyplot(ylog$Means ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="log of amplicon percental amount", main="Forward Primer GC-content")
+xyplot(ylog$Means ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="log of amplicon percental amount", main="Forward Primer length")
+xyplot(ylog$Means ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="log of amplicon percental amount", main="Reverse Primer GC-content")
+xyplot(ylog$Means ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="log of amplicon percental amount", main="Reverse Primer length")
+
+
+xyplot(y$Means ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="amplicon percental amount", main="Amplicon GC-content")
+xyplot(y$Means ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="amplicon percental amount", main="Amplicon length")
+xyplot(y$Means ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="amplicon percental amount", main="Forward Primer GC-content")
+xyplot(y$Means ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="amplicon percental amount", main="Forward Primer length")
+xyplot(y$Means ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="amplicon percental amount", main="Reverse Primer GC-content")
+xyplot(y$Means ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="amplicon percental amount", main="Reverse Primer length")
+
+
+xyplot(totalTable$mean ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="mean of amplicon percental amount", main="Amplicon GC-content")
+xyplot(totalTable$mean ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Amplicon length")
+xyplot(totalTable$mean ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="mean of amplicon percental amount", main="Forward Primer GC-content")
+xyplot(totalTable$mean ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Forward Primer length")
+xyplot(totalTable$mean ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="mean of  amplicon percental amount", main="Reverse Primer GC-content")
+xyplot(totalTable$mean ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Reverse Primer length")
+
+xyplot(totalTable$sd ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="sd of amplicon percental amount", main="Amplicon GC-content")
+xyplot(totalTable$sd ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Amplicon length")
+xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="sd of amplicon percental amount", main="Forward Primer GC-content")
+xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Forward Primer length")
+xyplot(totalTable$sd ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="sd of  amplicon percental amount", main="Reverse Primer GC-content")
+xyplot(totalTable$sd ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="sd of amplicon percental amount", main="Reverse Primer length")
+
+xyplot(log(totalTable$mean) ~ prepared_data$Amplicon_GC_content,  xlab="GC-content(%)", ylab="mean of amplicon percental amount", main="Amplicon GC-content")
+xyplot(log(totalTable$mean) ~ prepared_data$Amplicon_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Amplicon length")
+xyplot(log(totalTable$mean) ~ prepared_data$Fwd_Primer_GC_content,  xlab="GC-content(%)", ylab="mean of amplicon percental amount", main="Forward Primer GC-content")
+xyplot(log(totalTable$mean) ~ prepared_data$Fwd_Primer_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Forward Primer length")
+xyplot(log(totalTable$mean) ~ prepared_data$Rev_Primer_GC_content,  xlab="GC-content(%)", ylab="mean of  amplicon percental amount", main="Reverse Primer GC-content")
+xyplot(log(totalTable$mean) ~ prepared_data$Rev_Primer_Len,  xlab="Length", ylab="mean of amplicon percental amount", main="Reverse Primer length")
+```
+
+(2) MaxPolyX
+```{r}
+xyplot(totalTable$mean ~ prepared_data$Fwd_Primer_MaxPolyX,  xlab="MaxPolyX", ylab="mean of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$mean ~ prepared_data$Rev_Primer_MaxPolyX,  xlab="MaxPolyX", ylab="mean of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$mean ~ prepared_data$Amplicon_MaxPolyX,  xlab="MaxPolyX", ylab="mean of amplicon percental amount", main="Amplicon")
+
+
+xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_MaxPolyX,  xlab="MaxPolyX", ylab="sd of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$sd ~ prepared_data$Rev_Primer_MaxPolyX,  xlab="MaxPolyX", ylab="sd of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$sd ~ prepared_data$Amplicon_MaxPolyX,  xlab="MaxPolyX", ylab="sd of amplicon percental amount", main="Amplicon")
+```
+
+(2) Entropy
+```{r}
+xyplot(totalTable$mean ~ prepared_data$Fwd_Primer_Entropy,  xlab="Entropy", ylab="mean of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$mean ~ prepared_data$Rev_Primer_Entropy,  xlab="Entropy", ylab="mean of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$mean ~ prepared_data$Amplicon_Entropy,  xlab="Entropy", ylab="mean of amplicon percental amount", main="Amplicon")
+
+
+xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_Entropy,  xlab="Entropy", ylab="sd of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$sd ~ prepared_data$Rev_Primer_Entropy,  xlab="Entropy", ylab="sd of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$sd ~ prepared_data$Amplicon_Entropy,  xlab="Entropy", ylab="sd of amplicon percental amount", main="Amplicon")
+```
+
+(2) Hash
+```{r}
+xyplot(totalTable$mean ~ prepared_data$Fwd_Primer_Hash,  xlab="Hash", ylab="mean of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$mean ~ prepared_data$Rev_Primer_Hash,  xlab="Hash", ylab="mean of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$mean ~ prepared_data$Amplicon_Hash,  xlab="Hash", ylab="mean of amplicon percental amount", main="Amplicon")
+
+
+xyplot(totalTable$sd ~ prepared_data$Fwd_Primer_Hash,  xlab="Hash", ylab="sd of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$sd ~ prepared_data$Rev_Primer_Hash,  xlab="Hash", ylab="sd of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$sd ~ prepared_data$Amplicon_Hash,  xlab="Hash", ylab="sd of amplicon percental amount", main="Amplicon")
+```
+
+
+Graphics of dependencies of standard variation of result 
+```{r}
+bwplot(prepared_data$Fwd_END_3 ~ ylog$Means,     ylab="nucleotids", xlab="log of amplicon percental amount", 
+       main="Forward primer 3' end")
+bwplot(prepared_data$Rev_END_3 ~ ylog$Means,     ylab="nucleotids", xlab="log of amplicon percental amount", 
+       main="Reverse primer 3' end")
+bwplot(prepared_data$Start_Dangling_End ~ ylog$Means,     ylab="nucleotids", xlab="log of amplicon percental amount", 
+       main="First dangling end")
+bwplot(prepared_data$Stop_Dangling_End ~ ylog$Means,     ylab="nucleotids", xlab="log of amplicon percental amount", 
+       main="Second dangling end")
+
+bwplot(prepared_data$Fwd_END_3 ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
+        main="Forward primer 3' end")
+bwplot(prepared_data$Rev_END_3 ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
+        main="Reverse primer 3' end")
+bwplot(prepared_data$Start_Dangling_End ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
+      main="First dangling end")
+bwplot(prepared_data$Stop_Dangling_End ~ y$Means,     ylab="nucleotids", xlab="amplicon percental amount", 
+       main="Second dangling end")
+
+
+bwplot(prepared_data$Fwd_END_3 ~ totalTable$sd,     ylab="nucleotids", xlab="standard deviation of amplicon percental amount", 
+        main="Forward primer 3' end")
+bwplot(prepared_data$Rev_END_3 ~ totalTable$sd,     ylab="nucleotids", xlab="standard deviation of amplicon percental amount", 
+        main="Reverse primer 3' end")
+bwplot(prepared_data$Start_Dangling_End ~ totalTable$sd,     ylab="nucleotids", xlab="standard deviation of amplicon percental amount", 
+      main="First dangling end")
+bwplot(prepared_data$Stop_Dangling_End ~ totalTable$sd,     ylab="nucleotids", xlab="standard deviation of amplicon percental amount", 
+       main="Second dangling end")
+
+
+bwplot(prepared_data$Fwd_END_3 ~ totalTable$mean,     ylab="nucleotids", xlab="mean of amplicon percental amount", 
+        main="Forward primer 3' end")
+bwplot(prepared_data$Rev_END_3 ~ totalTable$mean,     ylab="nucleotids", xlab="mean of amplicon percental amount", 
+        main="Reverse primer 3' end")
+bwplot(prepared_data$Start_Dangling_End ~ totalTable$mean,     ylab="nucleotids", xlab="mean of amplicon percental amount", 
+      main="First dangling end")
+bwplot(prepared_data$Stop_Dangling_End ~ totalTable$mean,     ylab="nucleotids", xlab="mean of amplicon percental amount", 
+       main="Second dangling end")
+
+amplicon_len <- prepared_data$Amplicon_Len
+q <- quantile(amplicon_len, probs = c(1/4, 1/2, 3/4, 1))
+amplicon_len[amplicon_len <= q[1]] <- q[1]
+amplicon_len[amplicon_len > q[1] & amplicon_len <= q[2]] <- q[2]
+amplicon_len[amplicon_len > q[2] & amplicon_len <= q[3]] <- q[3]
+amplicon_len[amplicon_len > q[3]] <- q[4]
+histogram(amplicon_len)
+bwplot(amplicon_len ~ y$Means,     ylab="length", xlab="amplicon percental amount", 
+       main="Amplicon length")
+
+bwplot(amplicon_len ~ ylog$Means,     ylab="length", xlab="log of amplicon percental amount", 
+       main="Amplicon length")
+
+bwplot(amplicon_len ~ totalTable$sd,     ylab="length",  xlab="standard deviation of amplicon percental amount", 
+       main="Amplicon length")
+
+bwplot(amplicon_len ~ totalTable$mean,     ylab="length",  xlab="mean of amplicon percental amount", 
+       main="Amplicon length")
+
+amplicon_gc <- prepared_data$Amplicon_GC_content
+q <- quantile(amplicon_gc, probs = c(1/4, 1/2, 3/4, 1))
+amplicon_gc[amplicon_gc <= q[1]] <- q[1]
+amplicon_gc[amplicon_gc > q[1] & amplicon_gc <= q[2]] <- q[2]
+amplicon_gc[amplicon_gc > q[2] & amplicon_gc <= q[3]] <- q[3]
+amplicon_gc[amplicon_gc > q[3]] <- q[4]
+histogram(amplicon_gc)
+bwplot(amplicon_gc ~ y$Means,     ylab="GC-content", xlab="amplicon percental amount", 
+       main="Amplicon GC-content")
+
+bwplot(amplicon_gc ~ ylog$Means,   ylab="GC-content", xlab="log of amplicon percental amount", 
+       main="Amplicon GC-content")
+
+bwplot(amplicon_gc ~ totalTable$sd,  ylab="GC-content",  xlab="standard deviation of amplicon percental amount", 
+       main="Amplicon GC-content")
+
+bwplot(amplicon_gc ~ totalTable$mean,  ylab="GC-content",  xlab="mean of amplicon percental amount", 
+       main="Amplicon GC-content")
+
+primer_len <- prepared_data$Fwd_Primer_Len
+q <- quantile(primer_len, probs = c(1/4, 1/2, 3/4, 1))
+primer_len[primer_len <= q[1]] <- q[1]
+primer_len[primer_len > q[1] & primer_len <= q[2]] <- q[2]
+primer_len[primer_len > q[2] & primer_len <= q[3]] <- q[3]
+primer_len[primer_len > q[3]] <- q[4]
+histogram(primer_len)
+bwplot(primer_len ~ y$Means,     ylab="length", xlab="primer percental amount", 
+       main="Forward Primer length")
+
+bwplot(primer_len ~ ylog$Means,   ylab="length", xlab="log of amplicon percental amount", 
+       main="Forward Primer length")
+
+bwplot(primer_len ~ totalTable$sd,  ylab="length",  xlab="standard deviation of amplicon percental amount", 
+       main="Forward Primer length")
+
+bwplot(primer_len ~ totalTable$mean,  ylab="length",  xlab="mean of amplicon percental amount", 
+       main="Forward Primer length")
+
+primer_gc <- prepared_data$Fwd_Primer_GC_content
+q <- quantile(primer_gc, probs = c(1/4, 1/2, 3/4, 1))
+primer_gc[primer_gc <= q[1]] <- q[1]
+primer_gc[primer_gc > q[1] & primer_gc <= q[2]] <- q[2]
+primer_gc[primer_gc > q[2] & primer_gc <= q[3]] <- q[3]
+primer_gc[primer_gc > q[3]] <- q[4]
+bwplot(primer_gc ~ y$Means,     ylab="GC-content", xlab="primer percental amount", 
+       main="Forward Primer GC-content")
+
+bwplot(primer_gc ~ ylog$Means,   ylab="GC-content", xlab="log of amplicon percental amount", 
+       main="Forward Primer GC-content")
+
+bwplot(primer_gc ~ totalTable$sd,  ylab="GC-content",  xlab="standard deviation of amplicon percental amount", 
+       main="Forward Primer GC-content")
+
+bwplot(primer_gc ~ totalTable$mean,  ylab="GC-content",  xlab="mean of amplicon percental amount", 
+       main="Forward Primer GC-content")
+
+primer_len <- prepared_data$Rev_Primer_Len
+q <- quantile(primer_len, probs = c(1/4, 1/2, 3/4, 1))
+primer_len[primer_len <= q[1]] <- q[1]
+primer_len[primer_len > q[1] & primer_len <= q[2]] <- q[2]
+primer_len[primer_len > q[2] & primer_len <= q[3]] <- q[3]
+primer_len[primer_len > q[3]] <- q[4]
+histogram(primer_len)
+bwplot(primer_len ~ y$Means,     ylab="length", xlab="primer percental amount", 
+       main="Reverse Primer length")
+
+bwplot(primer_len ~ ylog$Means,   ylab="length", xlab="log of amplicon percental amount", 
+       main="Reverse Primer length")
+
+bwplot(primer_len ~ totalTable$sd,  ylab="length",  xlab="standard deviation of amplicon percental amount", 
+       main="Reverse Primer length")
+
+bwplot(primer_len ~ totalTable$mean,  ylab="length",  xlab="mean of amplicon percental amount", 
+       main="Reverse Primer length")
+
+primer_gc <- prepared_data$Rev_Primer_GC_content
+q <- quantile(primer_gc, probs = c(1/4, 1/2, 3/4, 1))
+primer_gc[primer_gc <= q[1]] <- q[1]
+primer_gc[primer_gc > q[1] & primer_gc <= q[2]] <- q[2]
+primer_gc[primer_gc > q[2] & primer_gc <= q[3]] <- q[3]
+primer_gc[primer_gc > q[3]] <- q[4]
+bwplot(primer_gc ~ y$Means,     ylab="GC-content", xlab="primer percental amount", 
+       main="Reverse Primer GC-content")
+
+bwplot(primer_gc ~ ylog$Means,   ylab="GC-content", xlab="log of amplicon percental amount", 
+       main="Reverse Primer GC-content")
+
+bwplot(primer_gc ~ totalTable$sd,  ylab="GC-content",  xlab="standard deviation of amplicon percental amount", 
+       main="Reverse Primer GC-content")
+
+bwplot(primer_gc ~ totalTable$mean,  ylab="GC-content",  xlab="mean of amplicon percental amount", 
+       main="Reverse Primer GC-content")
+
+```
+
