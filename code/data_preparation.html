@@ -215,7 +215,9 @@ prepared_data$Amplicon_MaxPolyX &lt;- as.numeric(lapply(as.character(data$Amplic
 </ol>
 <pre class="r"><code>prepared_data$Fwd_Primer_Entropy &lt;- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x) getEntropy(x)))
 prepared_data$Rev_Primer_Entropy &lt;- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Rev_Primer.), function(x) getEntropy(x)))
-prepared_data$Amplicon_Entropy &lt;- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) getEntropy(x)))</code></pre>
+prepared_data$Amplicon_Entropy &lt;- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) getEntropy(x)))
+print(head(prepared_data$Amplicon_Entropy))</code></pre>
+<pre><code>## [1] 0.3467282 0.3504628 0.3452297 0.3490609 0.3482708 0.3462790</code></pre>
 <ol start="2" style="list-style-type: decimal">
 <li>Get hash of primer and amplicon sequences</li>
 </ol>

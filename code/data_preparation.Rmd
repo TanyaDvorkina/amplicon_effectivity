@@ -203,13 +203,14 @@ getEntropy <- function(str){
       h <- h - 0.295*log(0.295)
     }
   }
-  h
+  h/nchar(str)
 }
 ```
 ```{r}
 prepared_data$Fwd_Primer_Entropy <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Fwd_Primer.), function(x) getEntropy(x)))
 prepared_data$Rev_Primer_Entropy <- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Rev_Primer.), function(x) getEntropy(x)))
 prepared_data$Amplicon_Entropy <- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) getEntropy(x)))
+print(head(prepared_data$Amplicon_Entropy))
 ```
 
 (2) Get hash of primer and amplicon sequences
