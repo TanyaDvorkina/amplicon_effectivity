@@ -107,56 +107,19 @@ for (i in 1:n){
 data$Start_Dangling_End &lt;- danglingEndStart
 data$Stop_Dangling_End &lt;- danglingEndStop</code></pre>
 <p>Load results and get a proportion for each</p>
-<pre class="r"><code>readResultFile &lt;- function(name, addName = FALSE, delim = &quot;\t&quot;){
-  filePath &lt;- paste(c(&quot;../data/&quot;, name), collapse = &quot;&quot;)
-  result &lt;- read.table(filePath, sep = delim, header = TRUE)
-  result$Gene &lt;- NULL
-  result$sam &lt;- NULL
-  result$X &lt;- NULL
-  sums &lt;- colSums(result[,-1])
-  proportion_result &lt;- sweep(result[,-1], 2, sums, '/' )
-  #proportion_result &lt;- sapply(proportion_result, function(x) log(x))
-  proportion_result$Means &lt;- rowMeans(proportion_result)
-  proportion_result$Target &lt;- result$Target
-  y &lt;- data.frame(Target = character(127))
-  y$Target &lt;- result$Target
-  ylog &lt;- data.frame(Target = character(127))
-  ylog$Target &lt;- result$Target
-  if (addName){
-    logresultStr &lt;- paste(c(name,&quot;_logresult&quot;), collapse = &quot;&quot;)
-    logMeansStr &lt;- paste(c(name,&quot;_logMeans&quot;), collapse = &quot;&quot;)
-    resultStr &lt;- paste(c(name,&quot;_result&quot;), collapse = &quot;&quot;)
-    MeansStr &lt;- paste(c(name,&quot;_Means&quot;), collapse = &quot;&quot;)
-  }else{
-    logresultStr &lt;- &quot;logresult&quot;
-    logMeansStr &lt;- &quot;logMeans&quot;
-    resultStr &lt;- &quot;result&quot;
-    MeansStr &lt;- &quot;Means&quot;
-  }
-  #ylog[resultStr] &lt;- log(proportion_result[,1])
-  ylog[MeansStr] &lt;- log(proportion_result$Means)
-  #y[resultStr] &lt;- proportion_result[,1]
-  y[MeansStr] &lt;- proportion_result$Means
-  ylog[ylog[MeansStr] == -Inf,][MeansStr] &lt;- -10 # min(y[ylog$Means != -Inf,]$logMeans) - 20
-  #ylog[ylog[resultStr] == -Inf,][resultStr] &lt;- -10 # min(y[ylog$result != -Inf,]$logresult) - 20
-  rownames(y) &lt;- y$Target
-  rownames(ylog) &lt;- ylog$Target
-  proportion &lt;- proportion_result
-  proportion$Means &lt;- NULL
-  proportion$Target &lt;- NULL
-  rownames(proportion) &lt;- proportion$Target
-  return(list(y = y, ylog = ylog, proportions = proportion))
-}
-
- y &lt;- readResultFile(&quot;result.csv&quot;,FALSE, &quot;,&quot;)$y
- ylog &lt;- readResultFile(&quot;result.csv&quot;,FALSE, &quot;,&quot;)$ylog
-#y &lt;- readResultFile(&quot;SN1-21_Run_17.xls&quot;,FALSE)$y
-#ylog &lt;- readResultFile(&quot;SN1-21_Run_17.xls&quot;,FALSE)$ylog
-
-resultFileNames &lt;- c(&quot;SN1-17_Run_14.xls&quot;, &quot;SN1-21_Run_17.xls&quot;,&quot;SN1-23-Run_18.xls&quot;,&quot;SN1-25-Run_19.xls&quot;, &quot;SN1-26-Run_20.xls&quot;)
+<pre class="r"><code>res &lt;- readResultFile(&quot;result.csv&quot;,TRUE, &quot;,&quot;)
 totalTable &lt;- data.frame(Target = character(127))
 totalTableOfMeans &lt;- data.frame(Target = character(127))
 totalTableOflogMeans &lt;- data.frame(Target = character(127))
+namesOfColumns &lt;- names(res$proportions)
+totalTable[namesOfColumns] &lt;- res$proportions[namesOfColumns]
+namesOfColumns &lt;- names(res$y)
+totalTableOfMeans[namesOfColumns] &lt;- res$y
+totalTableOflogMeans[namesOfColumns] &lt;- res$ylog
+y &lt;- res$y
+ylog &lt;- res$ylog</code></pre>
+<p>Load results and get a proportion for each</p>
+<pre class="r"><code>resultFileNames &lt;- c(&quot;SN1-17_Run_14.xls&quot;, &quot;SN1-21_Run_17.xls&quot;,&quot;SN1-23-Run_18.xls&quot;,&quot;SN1-25-Run_19.xls&quot;, &quot;SN1-26-Run_20.xls&quot;)
 for (i in 1:length(resultFileNames)){
   res &lt;- readResultFile(resultFileNames[i], TRUE)
   namesOfColumns &lt;- names(res$proportions)
@@ -233,9 +196,20 @@ ylog &lt;- ylog[valid_names,]
 totalTable &lt;- totalTable[valid_names,]
 totalTableOfMeans &lt;- totalTableOfMeans[valid_names,]
 totalTableOflogMeans &lt;- totalTableOflogMeans[valid_names,]</code></pre>
+<p>Prepare data for ThermoBLAST</p>
+<pre class="r"><code>rownames(data) &lt;- data$Amplicon_ID
+valid_amplicons &lt;- data[valid_names,]
+thermoblast_data &lt;- data.frame(Sequence = character(2*nrow(valid_amplicons)))
+thermoblast_data$Sequence &lt;- c(as.character(valid_amplicons$Ion_AmpliSeq_Fwd_Primer.), as.character(valid_amplicons$Ion_AmpliSeq_Rev_Primer.))
+thermoblast_data$Concentration &lt;- rep(0.0000001, nrow(thermoblast_data))
+thermoblast_data$StrandType &lt;- rep(&quot;DNA&quot;, nrow(thermoblast_data))
+thermoblast_data$Function &lt;- rep(&quot;PRIMER&quot;, nrow(thermoblast_data))
+thermoblast_data$Name &lt;- c(paste(valid_amplicons$Amplicon_ID, &quot;_Fwd&quot;, sep=&quot;&quot;), paste(valid_amplicons$Amplicon_ID, &quot;_Rev&quot;, sep=&quot;&quot;))
+write.csv(thermoblast_data[1:100,], &quot;../data/ForThermoBLAST1_p.csv&quot;, row.names=FALSE)
+write.csv(thermoblast_data[101:200,], &quot;../data/ForThermoBLAST2_p.csv&quot;, row.names=FALSE)</code></pre>
 <p>Save features to tsv file</p>
-<pre class="r"><code>prepared_data$res &lt;- y$Means
-prepared_data$logres &lt;- ylog$Means
+<pre class="r"><code>prepared_data$res &lt;- y[,2]
+prepared_data$logres &lt;- ylog[,2]
 prepared_data$sd &lt;- totalTable$sd
 prepared_data$mean &lt;- totalTable$mean
 prepared_data$MeansSD &lt;- totalTableOfMeans$sd

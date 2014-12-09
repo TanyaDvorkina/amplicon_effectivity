@@ -51,8 +51,7 @@ data$Start_Dangling_End <- danglingEndStart
 data$Stop_Dangling_End <- danglingEndStop
 ```
 
-Load results and get a proportion for each
-```{r}
+```{r, echo =FALSE}
 
 readResultFile <- function(name, addName = FALSE, delim = "\t"){
   filePath <- paste(c("../data/", name), collapse = "")
@@ -94,16 +93,26 @@ readResultFile <- function(name, addName = FALSE, delim = "\t"){
   rownames(proportion) <- proportion$Target
   return(list(y = y, ylog = ylog, proportions = proportion))
 }
+```
 
- y <- readResultFile("result.csv",FALSE, ",")$y
- ylog <- readResultFile("result.csv",FALSE, ",")$ylog
-#y <- readResultFile("SN1-21_Run_17.xls",FALSE)$y
-#ylog <- readResultFile("SN1-21_Run_17.xls",FALSE)$ylog
-
-resultFileNames <- c("SN1-17_Run_14.xls", "SN1-21_Run_17.xls","SN1-23-Run_18.xls","SN1-25-Run_19.xls", "SN1-26-Run_20.xls")
+Load results and get a proportion for each
+```{r}
+res <- readResultFile("result.csv",TRUE, ",")
 totalTable <- data.frame(Target = character(127))
 totalTableOfMeans <- data.frame(Target = character(127))
 totalTableOflogMeans <- data.frame(Target = character(127))
+namesOfColumns <- names(res$proportions)
+totalTable[namesOfColumns] <- res$proportions[namesOfColumns]
+namesOfColumns <- names(res$y)
+totalTableOfMeans[namesOfColumns] <- res$y
+totalTableOflogMeans[namesOfColumns] <- res$ylog
+y <- res$y
+ylog <- res$ylog
+```
+
+Load results and get a proportion for each
+```{r}
+resultFileNames <- c("SN1-17_Run_14.xls", "SN1-21_Run_17.xls","SN1-23-Run_18.xls","SN1-25-Run_19.xls", "SN1-26-Run_20.xls")
 for (i in 1:length(resultFileNames)){
   res <- readResultFile(resultFileNames[i], TRUE)
   namesOfColumns <- names(res$proportions)
@@ -121,6 +130,7 @@ rownames(totalTable) <- totalTable$Target
 rownames(totalTableOfMeans) <- totalTableOfMeans$Target
 rownames(totalTableOflogMeans) <- totalTableOflogMeans$Target
 ```
+
 
 (1) Get dangling ends
 ```{r}
@@ -256,10 +266,24 @@ totalTableOfMeans <- totalTableOfMeans[valid_names,]
 totalTableOflogMeans <- totalTableOflogMeans[valid_names,]
 ```
 
+Prepare data for ThermoBLAST
+```{r}
+rownames(data) <- data$Amplicon_ID
+valid_amplicons <- data[valid_names,]
+thermoblast_data <- data.frame(Sequence = character(2*nrow(valid_amplicons)))
+thermoblast_data$Sequence <- c(as.character(valid_amplicons$Ion_AmpliSeq_Fwd_Primer.), as.character(valid_amplicons$Ion_AmpliSeq_Rev_Primer.))
+thermoblast_data$Concentration <- rep(0.0000001, nrow(thermoblast_data))
+thermoblast_data$StrandType <- rep("DNA", nrow(thermoblast_data))
+thermoblast_data$Function <- rep("PRIMER", nrow(thermoblast_data))
+thermoblast_data$Name <- c(paste(valid_amplicons$Amplicon_ID, "_Fwd", sep=""), paste(valid_amplicons$Amplicon_ID, "_Rev", sep=""))
+write.csv(thermoblast_data[1:100,], "../data/ForThermoBLAST1_p.csv", row.names=FALSE)
+write.csv(thermoblast_data[101:200,], "../data/ForThermoBLAST2_p.csv", row.names=FALSE)
+```
+
 Save features to tsv file
 ```{r}
-prepared_data$res <- y$Means
-prepared_data$logres <- ylog$Means
+prepared_data$res <- y[,2]
+prepared_data$logres <- ylog[,2]
 prepared_data$sd <- totalTable$sd
 prepared_data$mean <- totalTable$mean
 prepared_data$MeansSD <- totalTableOfMeans$sd

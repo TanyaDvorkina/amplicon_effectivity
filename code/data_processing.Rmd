@@ -7,14 +7,10 @@ totalTable$sd <- prepared_data$sd
 totalTable$mean <- prepared_data$mean
 totalTableOfMeans <- NULL
 totalTableOfMeans$sd <- prepared_data$MeansSD
-y <- NULL
-y$Means <- prepared_data$res
-ylog <- NULL
-ylog$Means <- prepared_data$logres
 ```
 
 
-Use all features to train model
+Prepare train and test sets to get information from rf
 ```{r}
 library(randomForest)
 splitdf <- function(dataframe, n = 4, seed=NULL) {
@@ -28,24 +24,9 @@ splitdf <- function(dataframe, n = 4, seed=NULL) {
 splited <- splitdf(prepared_data)
 trainSet <- splited$trainset
 testSet <- splited$testset
-formula <- res ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3 +Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse <- function(error)
-{
-    sqrt(mean(error^2))
-}
-sd(testSet$res)
-rmse(predicted - testSet$res)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$res)
 ```
 
-
-Use only amplicon information and 3' end to train model
+Use all features to train model for mean
 ```{r}
 formula <- mean ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
 rf <- randomForest(formula, trainSet)
@@ -58,7 +39,7 @@ predicted <- predict(rf, newdata = testSet)
 rmse(predicted - testSet$mean)
 ```
 
-Use only amplicon information and 3' end to train model
+Use all features to train model for sd
 ```{r}
 formula <- sd ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
 rf <- randomForest(formula, trainSet)
@@ -71,85 +52,10 @@ predicted <- predict(rf, newdata = testSet)
 rmse(predicted - testSet$sd)
 ```
 
-Use only amplicon information and 3' end to train model
-```{r}
-formula <- res ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse(predicted - testSet$res)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$res)
-```
-
-
-
-Use only amplicon information to train model
-```{r}
-formula <- res ~ Amplicon_Len + Amplicon_GC_content
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-mean(testSet$res)
-rmse(predicted - testSet$res)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$res)
-```
-
-
-Use other to train model
-```{r}
-formula <- res ~ Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+Rev_Primer_Len +Rev_Primer_GC_content
-rf <- randomForest(formula, trainSet)
-importance(rf)
-fit <- lm(formula, data=trainSet)
-#plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse(predicted - testSet$res)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$res)
-```
-
 
 Different feature selection tests
 ```{r}
 library(lattice)
-library(FSelector)
-formula <- res ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
-chi.squared(formula, data = prepared_data)
-chi <- chi.squared(formula, data = prepared_data)
-chi$names <- rownames(chi)
-chi <- chi[order(-chi$attr_importance), ]
-barchart( chi$names ~ chi$attr_importance)
-information.gain(formula, data = prepared_data)
-gain.ratio(formula, data = prepared_data)
-symmetrical.uncertainty(formula, data = prepared_data)
-oneR(formula, data = prepared_data)
-random.forest.importance(formula, data = prepared_data, importance.type = 1)
-```
-
-Different feature selection tests
-```{r}
-library(FSelector)
-formula <- MeansSD ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
-chi.squared(formula, data = prepared_data)
-chi <- chi.squared(formula, data = prepared_data)
-chi$names <- rownames(chi)
-chi <- chi[order(-chi$attr_importance), ]
-barchart( chi$names ~ chi$attr_importance, main = "Chi-squared test", xlab = "Feature improtance")
-information.gain(formula, data = prepared_data)
-gain.ratio(formula, data = prepared_data)
-symmetrical.uncertainty(formula, data = prepared_data)
-oneR(formula, data = prepared_data)
-random.forest.importance(formula, data = prepared_data, importance.type = 1)
-```
-
-Different feature selection tests
-```{r}
 library(FSelector)
 histogram(prepared_data$sd)
 sd(prepared_data$sd)

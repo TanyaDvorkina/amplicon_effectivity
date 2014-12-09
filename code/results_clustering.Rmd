@@ -102,7 +102,7 @@ histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "KMeans")
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "KMeans")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "KMeans")
-histogram(~data$Fwd_END_3|data$cluster, main = "KMeans")
+histogram(~data$Rev_END_3|data$cluster, main = "KMeans")
 
 histogram(~data$Start_Dangling_End|data$cluster, main = "KMeans")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "KMeans")
@@ -116,7 +116,7 @@ histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "KMeans.Calinski-Hara
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
-histogram(~data$Fwd_END_3|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Rev_END_3|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 
 histogram(~data$Start_Dangling_End|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
@@ -130,7 +130,7 @@ histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "Affinity propagation
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "Affinity propagation")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "Affinity propagation")
-histogram(~data$Fwd_END_3|data$cluster, main = "Affinity propagation")
+histogram(~data$Rev_END_3|data$cluster, main = "Affinity propagation")
 
 histogram(~data$Start_Dangling_End|data$cluster, main = "Affinity propagation")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "Affinity propagation")
@@ -144,7 +144,7 @@ histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "Hierarchical cluster
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "Hierarchical clustering")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "Hierarchical clustering")
-histogram(~data$Fwd_END_3|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Rev_END_3|data$cluster, main = "Hierarchical clustering")
 
 histogram(~data$Start_Dangling_End|data$cluster, main = "Hierarchical clustering")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "Hierarchical clustering")
@@ -158,7 +158,7 @@ histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "Correlation clusteri
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "Correlation clustering")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "Correlation clustering")
-histogram(~data$Fwd_END_3|data$cluster, main = "Correlation clustering")
+histogram(~data$Rev_END_3|data$cluster, main = "Correlation clustering")
 
 histogram(~data$Start_Dangling_End|data$cluster, main = "Correlation clustering")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "Correlation clustering")
