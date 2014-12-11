@@ -1,0 +1,133 @@
+---
+title: "Amplicon similarity through experiments"
+author: "tanunia"
+date: "11/24/2014"
+output: html_document
+---
+
+Load results and normalize results for every amplicon
+```{r, echo=FALSE}
+readResultFile <- function(name, addName = FALSE, delim = "\t"){
+  filePath <- paste(c("../data/", name), collapse = "")
+  result <- read.table(filePath, sep = delim, header = TRUE)
+  result$Gene <- NULL
+  result$sam <- NULL
+  result$X <- NULL
+  sums <- rowSums(result[,-1])
+  proportion_result <- sweep(result[,-1], 1, sums, '/' )
+  proportion_result$Target <- result$Target
+  proportion_result
+}
+```
+
+```{r}
+y <- readResultFile("result.csv",FALSE, ",")
+filePath <- paste(c("../data/", "result.csv"), collapse = "")
+result <- read.table(filePath, sep = ",", header = TRUE)
+result$Gene <- NULL
+result$sam <- NULL
+result$X <- NULL
+sums <- rowSums(result[,-1])
+y$sum <- sums
+#resultFileNames <- c("SN1-17_Run_14.xls", "SN1-21_Run_17.xls","SN1-23-Run_18.xls","SN1-25-Run_19.xls", "SN1-26-Run_20.xls")
+#resultTable <- data.frame(Target = character(127))
+#for (i in 1:length(resultFileNames)){
+#  resTable <- readResultFile(resultFileNames[i], TRUE)
+#}
+```
+
+Simple KMeans clustering with a given number of clusters
+```{r}
+y <- y[complete.cases(y), ]
+mydata <- y[, 1:(ncol(y)-2)]
+fit <- kmeans(mydata, 4)
+y$clusterKMeans <- fit$cluster
+cat("KMeans given number of clusters: 4\n")
+```
+
+Choose number of clusters using Calinski-Harabasz criterion
+```{r}
+library(vegan)
+fit <- cascadeKM(scale(mydata, center = TRUE,  scale = TRUE), 1, 8, iter = 1000)
+plot(fit, sortg = TRUE, grpmts.plot = TRUE)
+calinski.best <- as.numeric(which.max(fit$results[2,]))
+cat("Calinski criterion optimal number of clusters:", calinski.best, "\n")
+y$clusterCalinski <- fit$partition[,calinski.best]
+```
+
+Choose number of clusters using Affinity propagation
+```{r}
+library(apcluster)
+d.apclus <- apcluster(negDistMat(r=2), mydata)
+cat("Affinity propagation optimal number of clusters:", length(d.apclus@clusters), "\n")
+y$clusterAP <- labels(d.apclus, type="enum")
+```
+
+Hierarchical clustering
+```{r}
+d_dist <- dist(as.matrix(mydata))
+fit <- hclust(d_dist, method="ward") 
+plot(fit)
+groups <- cutree(fit, k=7)
+rect.hclust(fit, k=7, border="red")
+y$clusterHierarchy <- groups
+```
+
+
+Hierarchical clustering with correlation matrix
+```{r}
+t.mydata <- t(mydata)
+colnames(t.mydata) <- y$Target
+data.scale<- scale(t.mydata, center=TRUE, scale=TRUE)
+cor_data <- cor(data.scale)
+cor_d <- as.dist(cor_data)
+fit <- hclust(cor_d, method="ward") 
+plot(fit)
+groups <- cutree(fit, k=7)
+rect.hclust(fit, k=7, border="red")
+y$clusterCor <- groups
+```
+
+Load prepared data
+```{r}
+prepared_data <- read.table("../data/features.tsv", sep = "\t", header=TRUE)
+rownames(prepared_data) <- prepared_data$Target
+rownames(y) <- y$Target
+valid_names <- intersect(y$Target, prepared_data$Target)
+prepared_data <- prepared_data[valid_names,]
+y <- y[valid_names,]
+```
+
+----
+### KMeans. Draw features for every cluster
+```{r}
+library(lattice)
+data <- prepared_data
+data$cluster <- as.factor(y$clusterKMeans)
+histogram(~y$sum|data$cluster, main = "KMeans")
+histogram(~data$Amplicon_GC_content|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_GC_content|data$cluster, main = "KMeans")
+
+histogram(~data$Amplicon_Len|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_Len|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_Len|data$cluster, main = "KMeans")
+
+histogram(~data$Amplicon_MaxPolyX|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_MaxPolyX|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_MaxPolyX|data$cluster, main = "KMeans")
+
+histogram(~data$Amplicon_Entropy|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_Entropy|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_Entropy|data$cluster, main = "KMeans")
+
+histogram(~data$Amplicon_Hash|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_Hash|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_Hash|data$cluster, main = "KMeans")
+
+histogram(~data$Fwd_END_3|data$cluster, main = "KMeans")
+histogram(~data$Rev_END_3|data$cluster, main = "KMeans")
+
+histogram(~data$Start_Dangling_End|data$cluster, main = "KMeans")
+histogram(~data$Stop_Dangling_End|data$cluster, main = "KMeans")
+```
