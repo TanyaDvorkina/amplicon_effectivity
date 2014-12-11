@@ -22,7 +22,13 @@ readResultFile <- function(name, addName = FALSE, delim = "\t"){
 
 ```{r}
 y <- readResultFile("result.csv",FALSE, ",")
-
+filePath <- paste(c("../data/", "result.csv"), collapse = "")
+result <- read.table(filePath, sep = ",", header = TRUE)
+result$Gene <- NULL
+result$sam <- NULL
+result$X <- NULL
+sums <- rowSums(result[,-1])
+y$sum <- sums
 #resultFileNames <- c("SN1-17_Run_14.xls", "SN1-21_Run_17.xls","SN1-23-Run_18.xls","SN1-25-Run_19.xls", "SN1-26-Run_20.xls")
 #resultTable <- data.frame(Target = character(127))
 #for (i in 1:length(resultFileNames)){
@@ -33,7 +39,7 @@ y <- readResultFile("result.csv",FALSE, ",")
 Simple KMeans clustering with a given number of clusters
 ```{r}
 y <- y[complete.cases(y), ]
-mydata <- y[, -ncol(y)]
+mydata <- y[, 1:(ncol(y)-2)]
 fit <- kmeans(mydata, 4)
 y$clusterKMeans <- fit$cluster
 cat("KMeans given number of clusters: 4\n")
@@ -42,7 +48,7 @@ cat("KMeans given number of clusters: 4\n")
 Choose number of clusters using Calinski-Harabasz criterion
 ```{r}
 library(vegan)
-fit <- cascadeKM(scale(mydata, center = TRUE,  scale = TRUE), 1, 20, iter = 1000)
+fit <- cascadeKM(scale(mydata, center = TRUE,  scale = TRUE), 1, 8, iter = 1000)
 plot(fit, sortg = TRUE, grpmts.plot = TRUE)
 calinski.best <- as.numeric(which.max(fit$results[2,]))
 cat("Calinski criterion optimal number of clusters:", calinski.best, "\n")
@@ -92,14 +98,32 @@ prepared_data <- prepared_data[valid_names,]
 y <- y[valid_names,]
 ```
 
-KMeans. Draw features for every cluster
+----
+### KMeans. Draw features for every cluster
 ```{r}
 library(lattice)
 data <- prepared_data
 data$cluster <- as.factor(y$clusterKMeans)
+#histogram(~y$sum|data$cluster, main = "KMeans")
 histogram(~data$Amplicon_GC_content|data$cluster, main = "KMeans")
 histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "KMeans")
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "KMeans")
+
+histogram(~data$Amplicon_Len|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_Len|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_Len|data$cluster, main = "KMeans")
+
+histogram(~data$Amplicon_MaxPolyX|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_MaxPolyX|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_MaxPolyX|data$cluster, main = "KMeans")
+
+histogram(~data$Amplicon_Entropy|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_Entropy|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_Entropy|data$cluster, main = "KMeans")
+
+histogram(~data$Amplicon_Hash|data$cluster, main = "KMeans")
+histogram(~data$Fwd_Primer_Hash|data$cluster, main = "KMeans")
+histogram(~data$Rev_Primer_Hash|data$cluster, main = "KMeans")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "KMeans")
 histogram(~data$Rev_END_3|data$cluster, main = "KMeans")
@@ -107,13 +131,29 @@ histogram(~data$Rev_END_3|data$cluster, main = "KMeans")
 histogram(~data$Start_Dangling_End|data$cluster, main = "KMeans")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "KMeans")
 ```
-
-Calinski criterion. Draw features for every cluster
+----
+### Calinski criterion. Draw features for every cluster
 ```{r}
 data$cluster <- as.factor(y$clusterCalinski)
 histogram(~data$Amplicon_GC_content|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+
+histogram(~data$Amplicon_Len|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Fwd_Primer_Len|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Rev_Primer_Len|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+
+histogram(~data$Amplicon_MaxPolyX|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Fwd_Primer_MaxPolyX|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Rev_Primer_MaxPolyX|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+
+histogram(~data$Amplicon_Entropy|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Fwd_Primer_Entropy|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Rev_Primer_Entropy|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+
+histogram(~data$Amplicon_Hash|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Fwd_Primer_Hash|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
+histogram(~data$Rev_Primer_Hash|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 histogram(~data$Rev_END_3|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
@@ -121,13 +161,29 @@ histogram(~data$Rev_END_3|data$cluster, main = "KMeans.Calinski-Harabasz criteri
 histogram(~data$Start_Dangling_End|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "KMeans.Calinski-Harabasz criterion")
 ```
-
-Affinity propagation. Draw features for every cluster
+----
+### Affinity propagation. Draw features for every cluster
 ```{r}
 data$cluster <- as.factor(y$clusterAP)
 histogram(~data$Amplicon_GC_content|data$cluster, main = "Affinity propagation")
 histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "Affinity propagation")
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "Affinity propagation")
+
+histogram(~data$Amplicon_Len|data$cluster, main = "Affinity propagation")
+histogram(~data$Fwd_Primer_Len|data$cluster, main = "Affinity propagation")
+histogram(~data$Rev_Primer_Len|data$cluster, main = "Affinity propagation")
+
+histogram(~data$Amplicon_MaxPolyX|data$cluster, main = "Affinity propagation")
+histogram(~data$Fwd_Primer_MaxPolyX|data$cluster, main = "Affinity propagation")
+histogram(~data$Rev_Primer_MaxPolyX|data$cluster, main = "Affinity propagation")
+
+histogram(~data$Amplicon_Entropy|data$cluster, main = "Affinity propagation")
+histogram(~data$Fwd_Primer_Entropy|data$cluster, main = "Affinity propagation")
+histogram(~data$Rev_Primer_Entropy|data$cluster, main = "Affinity propagation")
+
+histogram(~data$Amplicon_Hash|data$cluster, main = "Affinity propagation")
+histogram(~data$Fwd_Primer_Hash|data$cluster, main = "Affinity propagation")
+histogram(~data$Rev_Primer_Hash|data$cluster, main = "Affinity propagation")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "Affinity propagation")
 histogram(~data$Rev_END_3|data$cluster, main = "Affinity propagation")
@@ -135,13 +191,29 @@ histogram(~data$Rev_END_3|data$cluster, main = "Affinity propagation")
 histogram(~data$Start_Dangling_End|data$cluster, main = "Affinity propagation")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "Affinity propagation")
 ```
-
-Hierarchical clustering. Draw features for every cluster
+----
+### Hierarchical clustering. Draw features for every cluster
 ```{r}
 data$cluster <- as.factor(y$clusterHierarchy)
 histogram(~data$Amplicon_GC_content|data$cluster, main = "Hierarchical clustering")
 histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "Hierarchical clustering")
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "Hierarchical clustering")
+
+histogram(~data$Amplicon_Len|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Fwd_Primer_Len|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Rev_Primer_Len|data$cluster, main = "Hierarchical clustering")
+
+histogram(~data$Amplicon_MaxPolyX|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Fwd_Primer_MaxPolyX|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Rev_Primer_MaxPolyX|data$cluster, main = "Hierarchical clustering")
+
+histogram(~data$Amplicon_Entropy|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Fwd_Primer_Entropy|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Rev_Primer_Entropy|data$cluster, main = "Hierarchical clustering")
+
+histogram(~data$Amplicon_Hash|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Fwd_Primer_Hash|data$cluster, main = "Hierarchical clustering")
+histogram(~data$Rev_Primer_Hash|data$cluster, main = "Hierarchical clustering")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "Hierarchical clustering")
 histogram(~data$Rev_END_3|data$cluster, main = "Hierarchical clustering")
@@ -149,13 +221,29 @@ histogram(~data$Rev_END_3|data$cluster, main = "Hierarchical clustering")
 histogram(~data$Start_Dangling_End|data$cluster, main = "Hierarchical clustering")
 histogram(~data$Stop_Dangling_End|data$cluster, main = "Hierarchical clustering")
 ```
-
-Correlation clustering. Draw features for every cluster
+----
+### Correlation clustering. Draw features for every cluster
 ```{r}
 data$cluster <- as.factor(y$clusterCor)
 histogram(~data$Amplicon_GC_content|data$cluster, main = "Correlation clustering")
 histogram(~data$Fwd_Primer_GC_content|data$cluster, main = "Correlation clustering")
 histogram(~data$Rev_Primer_GC_content|data$cluster, main = "Correlation clustering")
+
+histogram(~data$Amplicon_Len|data$cluster, main = "Correlation clustering")
+histogram(~data$Fwd_Primer_Len|data$cluster, main = "Correlation clustering")
+histogram(~data$Rev_Primer_Len|data$cluster, main = "Correlation clustering")
+
+histogram(~data$Amplicon_MaxPolyX|data$cluster, main = "Correlation clustering")
+histogram(~data$Fwd_Primer_MaxPolyX|data$cluster, main = "Correlation clustering")
+histogram(~data$Rev_Primer_MaxPolyX|data$cluster, main = "Correlation clustering")
+
+histogram(~data$Amplicon_Entropy|data$cluster, main = "Correlation clustering")
+histogram(~data$Fwd_Primer_Entropy|data$cluster, main = "Correlation clustering")
+histogram(~data$Rev_Primer_Entropy|data$cluster, main = "Correlation clustering")
+
+histogram(~data$Amplicon_Hash|data$cluster, main = "Correlation clustering")
+histogram(~data$Fwd_Primer_Hash|data$cluster, main = "Correlation clustering")
+histogram(~data$Rev_Primer_Hash|data$cluster, main = "Correlation clustering")
 
 histogram(~data$Fwd_END_3|data$cluster, main = "Correlation clustering")
 histogram(~data$Rev_END_3|data$cluster, main = "Correlation clustering")
@@ -164,5 +252,512 @@ histogram(~data$Start_Dangling_End|data$cluster, main = "Correlation clustering"
 histogram(~data$Stop_Dangling_End|data$cluster, main = "Correlation clustering")
 ```
 
+-----
+-----
+### KMeans. Draw features for every cluster
+```{r, echo=FALSE}
+getFactoredDataTrunc <- function(dt){
+    q <- quantile(dt, probs = c(1/4, 1/2, 3/4, 1))
+    print(q)
+    dt[dt <= q[1]] <- trunc(q[1])
+    dt[dt > q[1] & dt <= q[2]] <- trunc(q[2])
+    dt[dt > q[2] & dt <= q[3]] <- trunc(q[3])
+    dt[dt > q[3]] <- trunc(q[4])
+    dt
+}
+```
+```{r, echo=FALSE}
+getFactoredData <- function(dt){
+    q <- quantile(dt, probs = c(1/4, 1/2, 3/4, 1))
+    print(q)
+    dt[dt <= q[1]] <- q[1]
+    dt[dt > q[1] & dt <= q[2]] <- q[2]
+    dt[dt > q[2] & dt <= q[3]] <- q[3]
+    dt[dt > q[3]] <- q[4]
+    dt
+}
+```
+```{r}
+library(lattice)
+data <- prepared_data
+data$cluster <- as.factor(y$clusterKMeans)
+histogram(data$cluster)
+amplicon_gc_content <- getFactoredDataTrunc(data$Amplicon_GC_content)
+counts <- table(data$cluster, amplicon_gc_content)
+barplot(counts, main="Amplicon Distribution by Amplicon GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_gc_content <- getFactoredDataTrunc(data$Fwd_Primer_GC_content)
+counts <- table(data$cluster, fwd_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Fwd Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_gc_content <- getFactoredDataTrunc(data$Rev_Primer_GC_content)
+counts <- table(data$cluster, rev_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Rev Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
 
+amplicon_len <- getFactoredDataTrunc(data$Amplicon_Len)
+counts <- table(data$cluster, amplicon_len)
+barplot(counts, main="Amplicon Distribution by Amplicon Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_len <- getFactoredDataTrunc(data$Fwd_Primer_Len)
+counts <- table(data$cluster, fwd_primer_len)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_len <- getFactoredDataTrunc(data$Rev_Primer_Len)
+counts <- table(data$cluster, rev_primer_len)
+barplot(counts, main="Amplicon Distribution by Rev Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_MaxPolyX <- getFactoredDataTrunc(data$Amplicon_MaxPolyX)
+counts <- table(data$cluster, amplicon_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Amplicon MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_MaxPolyX <- getFactoredDataTrunc(data$Fwd_Primer_MaxPolyX)
+counts <- table(data$cluster, fwd_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Fwd Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_MaxPolyX <- getFactoredDataTrunc(data$Rev_Primer_MaxPolyX)
+counts <- table(data$cluster, rev_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Rev Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_Entropy <- getFactoredData(data$Amplicon_Entropy)
+counts <- table(data$cluster, amplicon_Entropy)
+barplot(counts, main="Amplicon Distribution by Amplicon Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Entropy <- getFactoredData(data$Fwd_Primer_Entropy)
+counts <- table(data$cluster, fwd_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Entropy <- getFactoredData(data$Rev_Primer_Entropy)
+counts <- table(data$cluster, rev_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Rev Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_Hash <- getFactoredDataTrunc(data$Amplicon_Hash)
+counts <- table(data$cluster, amplicon_Hash)
+barplot(counts, main="Amplicon Distribution by Amplicon Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Hash <- getFactoredDataTrunc(data$Fwd_Primer_Hash)
+counts <- table(data$cluster, fwd_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Hash <- getFactoredDataTrunc(data$Rev_Primer_Hash)
+counts <- table(data$cluster, rev_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Rev Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+histogram(~data$cluster|data$Fwd_END_3, main = "KMeans")
+histogram(~data$cluster|data$Rev_END_3, main = "KMeans")
+
+histogram(~data$cluster|data$Start_Dangling_End, main = "KMeans")
+histogram(~data$cluster|data$Stop_Dangling_End, main = "KMeans")
+```
+----
+### Calinski criterion. Draw features for every cluster
+```{r}
+data$cluster <- as.factor(y$clusterCalinski)
+histogram(data$cluster)
+amplicon_gc_content <- getFactoredDataTrunc(data$Amplicon_GC_content)
+counts <- table(data$cluster, amplicon_gc_content)
+barplot(counts, main="Amplicon Distribution by Amplicon GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_gc_content <- getFactoredDataTrunc(data$Fwd_Primer_GC_content)
+counts <- table(data$cluster, fwd_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Fwd Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_gc_content <- getFactoredDataTrunc(data$Rev_Primer_GC_content)
+counts <- table(data$cluster, rev_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Rev Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_len <- getFactoredDataTrunc(data$Amplicon_Len)
+counts <- table(data$cluster, amplicon_len)
+barplot(counts, main="Amplicon Distribution by Amplicon Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_len <- getFactoredDataTrunc(data$Fwd_Primer_Len)
+counts <- table(data$cluster, fwd_primer_len)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_len <- getFactoredDataTrunc(data$Rev_Primer_Len)
+counts <- table(data$cluster, rev_primer_len)
+barplot(counts, main="Amplicon Distribution by Rev Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_MaxPolyX <- getFactoredDataTrunc(data$Amplicon_MaxPolyX)
+counts <- table(data$cluster, amplicon_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Amplicon MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_MaxPolyX <- getFactoredDataTrunc(data$Fwd_Primer_MaxPolyX)
+counts <- table(data$cluster, fwd_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Fwd Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_MaxPolyX <- getFactoredDataTrunc(data$Rev_Primer_MaxPolyX)
+counts <- table(data$cluster, rev_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Rev Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_Entropy <- getFactoredData(data$Amplicon_Entropy)
+counts <- table(data$cluster, amplicon_Entropy)
+barplot(counts, main="Amplicon Distribution by Amplicon Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Entropy <- getFactoredData(data$Fwd_Primer_Entropy)
+counts <- table(data$cluster, fwd_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Entropy <- getFactoredData(data$Rev_Primer_Entropy)
+counts <- table(data$cluster, rev_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Rev Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_Hash <- getFactoredDataTrunc(data$Amplicon_Hash)
+counts <- table(data$cluster, amplicon_Hash)
+barplot(counts, main="Amplicon Distribution by Amplicon Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Hash <- getFactoredDataTrunc(data$Fwd_Primer_Hash)
+counts <- table(data$cluster, fwd_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Hash <- getFactoredDataTrunc(data$Rev_Primer_Hash)
+counts <- table(data$cluster, rev_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Rev Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+histogram(~data$cluster|data$Fwd_END_3, main =  "KMeans.Calinski-Harabasz criterion")
+histogram(~data$cluster|data$Rev_END_3, main =  "KMeans.Calinski-Harabasz criterion")
+
+histogram(~data$cluster|data$Start_Dangling_End, main =  "KMeans.Calinski-Harabasz criterion")
+histogram(~data$cluster|data$Stop_Dangling_End, main =  "KMeans.Calinski-Harabasz criterion")
+```
+----
+### Affinity propagation. Draw features for every cluster
+```{r}
+data$cluster <- as.factor(y$clusterAP)
+histogram(data$cluster)
+amplicon_gc_content <- getFactoredDataTrunc(data$Amplicon_GC_content)
+counts <- table(data$cluster, amplicon_gc_content)
+barplot(counts, main="Amplicon Distribution by Amplicon GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_gc_content <- getFactoredDataTrunc(data$Fwd_Primer_GC_content)
+counts <- table(data$cluster, fwd_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Fwd Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_gc_content <- getFactoredDataTrunc(data$Rev_Primer_GC_content)
+counts <- table(data$cluster, rev_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Rev Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_len <- getFactoredDataTrunc(data$Amplicon_Len)
+counts <- table(data$cluster, amplicon_len)
+barplot(counts, main="Amplicon Distribution by Amplicon Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_len <- getFactoredDataTrunc(data$Fwd_Primer_Len)
+counts <- table(data$cluster, fwd_primer_len)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_len <- getFactoredDataTrunc(data$Rev_Primer_Len)
+counts <- table(data$cluster, rev_primer_len)
+barplot(counts, main="Amplicon Distribution by Rev Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_MaxPolyX <- getFactoredDataTrunc(data$Amplicon_MaxPolyX)
+counts <- table(data$cluster, amplicon_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Amplicon MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_MaxPolyX <- getFactoredDataTrunc(data$Fwd_Primer_MaxPolyX)
+counts <- table(data$cluster, fwd_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Fwd Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_MaxPolyX <- getFactoredDataTrunc(data$Rev_Primer_MaxPolyX)
+counts <- table(data$cluster, rev_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Rev Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_Entropy <- getFactoredData(data$Amplicon_Entropy)
+counts <- table(data$cluster, amplicon_Entropy)
+barplot(counts, main="Amplicon Distribution by Amplicon Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Entropy <- getFactoredData(data$Fwd_Primer_Entropy)
+counts <- table(data$cluster, fwd_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Entropy <- getFactoredData(data$Rev_Primer_Entropy)
+counts <- table(data$cluster, rev_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Rev Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_Hash <- getFactoredDataTrunc(data$Amplicon_Hash)
+counts <- table(data$cluster, amplicon_Hash)
+barplot(counts, main="Amplicon Distribution by Amplicon Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Hash <- getFactoredDataTrunc(data$Fwd_Primer_Hash)
+counts <- table(data$cluster, fwd_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Hash <- getFactoredDataTrunc(data$Rev_Primer_Hash)
+counts <- table(data$cluster, rev_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Rev Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+histogram(~data$cluster|data$Fwd_END_3, main = "Affinity propagation")
+histogram(~data$cluster|data$Rev_END_3, main = "Affinity propagation")
+
+histogram(~data$cluster|data$Start_Dangling_End, main = "Affinity propagation")
+histogram(~data$cluster|data$Stop_Dangling_End, main = "Affinity propagation")
+```
+----
+### Hierarchical clustering. Draw features for every cluster
+```{r}
+data$cluster <- as.factor(y$clusterHierarchy)
+histogram(data$cluster)
+amplicon_gc_content <- getFactoredDataTrunc(data$Amplicon_GC_content)
+counts <- table(data$cluster, amplicon_gc_content)
+barplot(counts, main="Amplicon Distribution by Amplicon GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_gc_content <- getFactoredDataTrunc(data$Fwd_Primer_GC_content)
+counts <- table(data$cluster, fwd_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Fwd Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_gc_content <- getFactoredDataTrunc(data$Rev_Primer_GC_content)
+counts <- table(data$cluster, rev_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Rev Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_len <- getFactoredDataTrunc(data$Amplicon_Len)
+counts <- table(data$cluster, amplicon_len)
+barplot(counts, main="Amplicon Distribution by Amplicon Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_len <- getFactoredDataTrunc(data$Fwd_Primer_Len)
+counts <- table(data$cluster, fwd_primer_len)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_len <- getFactoredDataTrunc(data$Rev_Primer_Len)
+counts <- table(data$cluster, rev_primer_len)
+barplot(counts, main="Amplicon Distribution by Rev Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_MaxPolyX <- getFactoredDataTrunc(data$Amplicon_MaxPolyX)
+counts <- table(data$cluster, amplicon_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Amplicon MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_MaxPolyX <- getFactoredDataTrunc(data$Fwd_Primer_MaxPolyX)
+counts <- table(data$cluster, fwd_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Fwd Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_MaxPolyX <- getFactoredDataTrunc(data$Rev_Primer_MaxPolyX)
+counts <- table(data$cluster, rev_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Rev Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_Entropy <- getFactoredData(data$Amplicon_Entropy)
+counts <- table(data$cluster, amplicon_Entropy)
+barplot(counts, main="Amplicon Distribution by Amplicon Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Entropy <- getFactoredData(data$Fwd_Primer_Entropy)
+counts <- table(data$cluster, fwd_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Entropy <- getFactoredData(data$Rev_Primer_Entropy)
+counts <- table(data$cluster, rev_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Rev Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_Hash <- getFactoredDataTrunc(data$Amplicon_Hash)
+counts <- table(data$cluster, amplicon_Hash)
+barplot(counts, main="Amplicon Distribution by Amplicon Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Hash <- getFactoredDataTrunc(data$Fwd_Primer_Hash)
+counts <- table(data$cluster, fwd_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Hash <- getFactoredDataTrunc(data$Rev_Primer_Hash)
+counts <- table(data$cluster, rev_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Rev Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+histogram(~data$cluster|data$Fwd_END_3, main = "Hierarchical clustering")
+histogram(~data$cluster|data$Rev_END_3, main = "Hierarchical clustering")
+
+histogram(~data$cluster|data$Start_Dangling_End, main = "Hierarchical clustering")
+histogram(~data$cluster|data$Stop_Dangling_End, main = "Hierarchical clustering")
+```
+----
+### Correlation clustering. Draw features for every cluster
+```{r}
+data$cluster <- as.factor(y$clusterCor)
+histogram(data$cluster)
+amplicon_gc_content <- getFactoredDataTrunc(data$Amplicon_GC_content)
+counts <- table(data$cluster, amplicon_gc_content)
+barplot(counts, main="Amplicon Distribution by Amplicon GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_gc_content <- getFactoredDataTrunc(data$Fwd_Primer_GC_content)
+counts <- table(data$cluster, fwd_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Fwd Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_gc_content <- getFactoredDataTrunc(data$Rev_Primer_GC_content)
+counts <- table(data$cluster, rev_primer_gc_content)
+barplot(counts, main="Amplicon Distribution by Rev Primer GC-content and Clusters",
+  xlab="GC-content", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_len <- getFactoredDataTrunc(data$Amplicon_Len)
+counts <- table(data$cluster, amplicon_len)
+barplot(counts, main="Amplicon Distribution by Amplicon Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_len <- getFactoredDataTrunc(data$Fwd_Primer_Len)
+counts <- table(data$cluster, fwd_primer_len)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_len <- getFactoredDataTrunc(data$Rev_Primer_Len)
+counts <- table(data$cluster, rev_primer_len)
+barplot(counts, main="Amplicon Distribution by Rev Primer Length and Clusters",
+  xlab="Length", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_MaxPolyX <- getFactoredDataTrunc(data$Amplicon_MaxPolyX)
+counts <- table(data$cluster, amplicon_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Amplicon MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_MaxPolyX <- getFactoredDataTrunc(data$Fwd_Primer_MaxPolyX)
+counts <- table(data$cluster, fwd_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Fwd Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_MaxPolyX <- getFactoredDataTrunc(data$Rev_Primer_MaxPolyX)
+counts <- table(data$cluster, rev_primer_MaxPolyX)
+barplot(counts, main="Amplicon Distribution by Rev Primer MaxPolyX and Clusters",
+  xlab="MaxPolyX", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+amplicon_Entropy <- getFactoredData(data$Amplicon_Entropy)
+counts <- table(data$cluster, amplicon_Entropy)
+barplot(counts, main="Amplicon Distribution by Amplicon Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Entropy <- getFactoredData(data$Fwd_Primer_Entropy)
+counts <- table(data$cluster, fwd_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Entropy <- getFactoredData(data$Rev_Primer_Entropy)
+counts <- table(data$cluster, rev_primer_Entropy)
+barplot(counts, main="Amplicon Distribution by Rev Primer Entropy and Clusters",
+  xlab="Entropy", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+amplicon_Hash <- getFactoredDataTrunc(data$Amplicon_Hash)
+counts <- table(data$cluster, amplicon_Hash)
+barplot(counts, main="Amplicon Distribution by Amplicon Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+fwd_primer_Hash <- getFactoredDataTrunc(data$Fwd_Primer_Hash)
+counts <- table(data$cluster, fwd_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Fwd Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+rev_primer_Hash <- getFactoredDataTrunc(data$Rev_Primer_Hash)
+counts <- table(data$cluster, rev_primer_Hash)
+barplot(counts, main="Amplicon Distribution by Rev Primer Hash and Clusters",
+  xlab="Hash", col=c("darkblue","red","green","blue"),
+   legend = rownames(counts))
+
+
+histogram(~data$cluster|data$Fwd_END_3, main = "Correlation clustering")
+histogram(~data$cluster|data$Rev_END_3, main = "Correlation clustering")
+
+histogram(~data$cluster|data$Start_Dangling_End, main = "Correlation clustering")
+histogram(~data$cluster|data$Stop_Dangling_End, main = "Correlation clustering")
+```
+
+
+### Amplification results
+```{r, echo=FALSE}
+getFactoredDataTrunc <- function(dt){
+    q <- quantile(dt, probs = c(1/4, 1/2, 3/4, 1))
+    print(q)
+    dt[dt <= q[1]] <- trunc(q[1])
+    dt[dt > q[1] & dt <= q[2]] <- trunc(q[2])
+    dt[dt > q[2] & dt <= q[3]] <- trunc(q[3])
+    dt[dt > q[3]] <- trunc(q[4])
+    dt
+}
+```
 
