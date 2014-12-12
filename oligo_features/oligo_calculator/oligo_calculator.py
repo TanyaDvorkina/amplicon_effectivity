@@ -83,31 +83,37 @@ class OligoCalculator:
 
         logger.debug('Page in pretty print:\n%s', page.prettify())
         Tm = float(page.find(id="Seq1TmOut").get_text())
-        dG = float(page.find(id="Seq1dGOut").get_text())
+        dG0 = float(page.find(id="Seq1dGOut").get_text())
         dH = float(page.find(id="Seq1dHOut").get_text())
-        dS = float(page.find(id="Seq1dSOut").get_text())
+        dS = float(page.find(id="Seq1dSOut").get_text()) / 1000
 
-        logger.info('Got oligonucleotide parameters. Tm: %s, dG: %s', Tm, dG)
+        logger.info('Got oligonucleotide parameters. Tm: %s, dG0: %s, dH: %s, dS: %s, dG: %s',
+                    Tm, dG0, dH, dS, calculatedG(dH, dS, 60 + 273))
 
-        return Tm, dG, dH, dS
+        return Tm, dG0, dH, dS
+
+def calculatedG(dH, dS, T):
+    return dH - dS * T
 
 if __name__ == "__main__":
 
     input = '../ForThermoBLAST_IAD30284.csv'
     output = '../OligoFeatures_IAD30284.csv'
 
+    reaction_temp = 273 + 60
+
     oligo_caclulator = OligoCalculator()
 
     #Use standart parameters for AmpliSeq primers temperature approximation (see Confluence discussion)
     with open(input) as f_in:
         with open(output, 'w') as f_out:
-            header = f_in.readline().strip() + ','.join(['"Tm"', '"dG"', '"dH"', '"dS"']) + '\n'
+            header = f_in.readline().strip() + ','.join(['', '"Tm"', '"dG0"', '"dH"', '"dS"', '"dG"']) + '\n'
             f_out.write(header)
             for line in f_in:
                 sequence = line.split(',')[0][1:-1]
                 tm, dg, dh, ds = oligo_caclulator.caclulate(sequence, oligo_concentration=0.05,
                                                 target_concentration=0, na_concentration=100, mg_concentration=2.5,
                                                         dntp_concentration=0.2)
-                out_line = line.strip() + ','.join(str(x) for x in ['', tm, dg, dh, ds]) + '\n'
+                out_line = line.strip() + ','.join(str(x) for x in ['', tm, dg, dh, ds, calculatedG(dh, ds, reaction_temp)]) + '\n'
                 f_out.write(out_line)
                 f_out.flush()
