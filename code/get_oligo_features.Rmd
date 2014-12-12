@@ -1,0 +1,49 @@
+---
+title: "Get_oligo_features"
+author: "tanunia"
+date: "12/13/2014"
+output: html_document
+---
+
+### Load amplicon features
+```{r}
+prepared_data <- read.table("../data/features.tsv", sep = "\t", header=TRUE)
+rownames(prepared_data) <- prepared_data$Target
+```
+
+### Load oligo features
+```{r}
+oligo_data <- read.csv("../data/OligoFeatures_IAD30284.csv", header=TRUE)
+```
+
+### Concat features
+```{r}
+oligo_data_fwd <- oligo_data[grepl("Fwd",oligo_data$Name),]
+oligo_data_rev <- oligo_data[grepl("Rev",oligo_data$Name),]
+oligo_data_fwd$Name <- gsub("_Fwd","",oligo_data_fwd$Name)
+rownames(oligo_data_fwd) <- oligo_data_fwd$Name 
+oligo_data_rev$Name <- gsub("_Rev","",oligo_data_rev$Name)
+rownames(oligo_data_rev) <- oligo_data_rev$Name 
+valid_names <- intersect(prepared_data$Target, oligo_data_fwd$Name)
+prepared_data$Tm_fwd <- rep(0, nrow(prepared_data))
+prepared_data$dG_fwd <- rep(0, nrow(prepared_data))
+prepared_data$dH_fwd <- rep(0, nrow(prepared_data))
+prepared_data$dS_fwd <- rep(0, nrow(prepared_data))
+prepared_data[valid_names,]$Tm_fwd <- oligo_data_fwd[valid_names,]$Tm
+prepared_data[valid_names,]$dG_fwd <- oligo_data_fwd[valid_names,]$dG
+prepared_data[valid_names,]$dH_fwd <- oligo_data_fwd[valid_names,]$dH
+prepared_data[valid_names,]$dS_fwd <- oligo_data_fwd[valid_names,]$dS
+prepared_data$Tm_rev <- rep(0, nrow(prepared_data))
+prepared_data$dG_rev <- rep(0, nrow(prepared_data))
+prepared_data$dH_rev <- rep(0, nrow(prepared_data))
+prepared_data$dS_rev <- rep(0, nrow(prepared_data))
+prepared_data[valid_names,]$Tm_rev <- oligo_data_rev[valid_names,]$Tm
+prepared_data[valid_names,]$dG_rev <- oligo_data_rev[valid_names,]$dG
+prepared_data[valid_names,]$dH_rev <- oligo_data_rev[valid_names,]$dH
+prepared_data[valid_names,]$dS_rev <- oligo_data_rev[valid_names,]$dS
+```
+
+### Save features
+```{r}
+write.table(prepared_data, "../data/features_oligo.tsv", col.names = TRUE, sep = "\t", row.names = FALSE, quote = FALSE)
+```

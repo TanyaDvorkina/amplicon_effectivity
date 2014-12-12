@@ -1,0 +1,55 @@
+---
+title: "Linear_regression"
+author: "tanunia"
+date: "12/13/2014"
+output: html_document
+---
+
+### Load train data
+```{r}
+train <- read.table("../data/features.tsv", sep = "\t", header=TRUE)
+train$Start_Dangling_End <- as.numeric(train$Start_Dangling_End)
+train$Stop_Dangling_End <- as.numeric(train$Stop_Dangling_End) 
+```
+
+### Load test data
+```{r}
+test <- read.table("../data/panel2/features.tsv", sep = "\t", header=TRUE)
+test$Start_Dangling_End <- as.numeric(test$Start_Dangling_End)
+test$Stop_Dangling_End <- as.numeric(test$Stop_Dangling_End) 
+```
+
+### linear regression
+```{r}
+#library(Metrics)
+formula <- mean ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
+fit <- lm(formula, data=train)
+summary(fit)
+coefficients(fit)
+confint(fit, level=0.95)
+predicted <- predict(fit, newdata = test)
+#rmse(test$mean, predicted)
+rmse(predicted - test$mean)
+predicted <- predict(fit, newdata = train)
+#rmse(train$mean, predicted)
+rmse(predicted - train$mean)
+layout(matrix(c(1,2,3,4),2,2))
+plot(fit)
+```
+
+### linear regression
+```{r}
+formula <- mean ~ Amplicon_Len + Amplicon_GC_content + Amplicon_Entropy
+fit <- lm(formula, data=train)
+summary(fit)
+coefficients(fit)
+confint(fit, level=0.95)
+predicted <- predict(fit, newdata = test)
+#rmse(test$mean, predicted)
+rmse(predicted - test$mean)
+predicted <- predict(fit, newdata = train)
+#rmse(train$mean, predicted)
+rmse(predicted - train$mean)
+layout(matrix(c(1,2,3,4),2,2))
+plot(fit)
+```
