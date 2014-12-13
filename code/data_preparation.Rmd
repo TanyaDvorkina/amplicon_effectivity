@@ -4,13 +4,15 @@
 Сonvert data to csv format to read it easily with R and remove unuseful columns from it
 
 ```{r}
-data <- read.csv("../data/IAD30284_384WellPlateDataSheet.csv", header = TRUE, skip = 14)
+#data <- read.csv("../data/IAD30284_384WellPlateDataSheet.csv", header = TRUE, skip = 14)
+data <- read.csv("../data/panel2/IAD39777_51_384WellPlateDataSheet.csv", header = TRUE, skip = 9)
 data <- data[data$Amplicon_ID != "Blank", ]
 data$X384Well_Row <- NULL
 data$X384Well_Col <- NULL
 data$Gene_Symbol <- NULL
 data$Genome_Version <- NULL
 data$LineItem_Type <- NULL
+data <-data[complete.cases(data), ]
 ```
 
 Get amplicon sequence that lies between primers
@@ -22,19 +24,30 @@ chromosomes <- data$Chr
 beginings <- data$Insert_Start
 endings <- data$Insert_Stop
 ampliconInnerPart <- rep("", n)
-for (i in 1:n){
-  call <- paste(c("http://178.79.134.178/refservice/references/GRCh37.p13/sequence?contig=", as.character(chromosomes[i]),
-                         "&start=",as.character(beginings[i]),"&end=",as.character(endings[i])), collapse = "")
-  call
-  jsonData <- fromJSON(call)
-  ampliconInnerPart[i] <- jsonData$sequence
-}
+ampliconInnerPart10 <- rep("", n)
+unvalid <- NULL
+for (i in 1:n)
+  if (endings[i]-beginings[i]<=4000) {
+    call <- paste(c("http://178.79.134.178/refservice/references/GRCh37.p13/sequence?contig=", as.character(chromosomes[i]),
+                           "&start=",as.character(beginings[i]),"&end=",as.character(endings[i])), collapse = "")
+    jsonData <- fromJSON(call)
+    ampliconInnerPart[i] <- jsonData$sequence
+    ampliconInnerPart10[i] <- substr(jsonData$sequence, 10, 10)
+  }else{
+    unvalid <- c(unvalid, i)
+  }
+print(unvalid)
+data <- data[-unvalid, ]
+ampliconInnerPart <- ampliconInnerPart[-unvalid]
+ampliconInnerPart10 <- ampliconInnerPart10[-unvalid]
 head(ampliconInnerPart)
 data$Amplicon_Inner_Part <- ampliconInnerPart
+data$Amplicon_Inner_Part10 <- ampliconInnerPart10
 ```
 
 Get dangling ends
 ```{r}
+n <- nrow(data)
 danglingEndStart <- rep("", n)
 danglingEndStop <- rep("", n)
 for (i in 1:n){
@@ -54,7 +67,7 @@ data$Stop_Dangling_End <- danglingEndStop
 ```{r, echo =FALSE}
 
 readResultFile <- function(name, addName = FALSE, delim = "\t"){
-  filePath <- paste(c("../data/", name), collapse = "")
+  filePath <- paste(c("../data/panel2/", name), collapse = "")
   result <- read.table(filePath, sep = delim, header = TRUE)
   result$Gene <- NULL
   result$sam <- NULL
@@ -64,9 +77,9 @@ readResultFile <- function(name, addName = FALSE, delim = "\t"){
   #proportion_result <- sapply(proportion_result, function(x) log(x))
   proportion_result$Means <- rowMeans(proportion_result)
   proportion_result$Target <- result$Target
-  y <- data.frame(Target = character(127))
+  y <- data.frame(Target = character(nrow(result)))
   y$Target <- result$Target
-  ylog <- data.frame(Target = character(127))
+  ylog <- data.frame(Target = character(nrow(result)))
   ylog$Target <- result$Target
   if (addName){
     logresultStr <- paste(c(name,"_logresult"), collapse = "")
@@ -97,10 +110,10 @@ readResultFile <- function(name, addName = FALSE, delim = "\t"){
 
 Load results and get a proportion for each
 ```{r}
-res <- readResultFile("result.csv",TRUE, ",")
-totalTable <- data.frame(Target = character(127))
-totalTableOfMeans <- data.frame(Target = character(127))
-totalTableOflogMeans <- data.frame(Target = character(127))
+res <- readResultFile("Run_14.xls",TRUE)
+totalTable <- data.frame(Target = character(nrow(res$proportions)))
+totalTableOfMeans <- data.frame(Target = character(nrow(res$proportions)))
+totalTableOflogMeans <- data.frame(Target = character(nrow(res$proportions)))
 namesOfColumns <- names(res$proportions)
 totalTable[namesOfColumns] <- res$proportions[namesOfColumns]
 namesOfColumns <- names(res$y)
@@ -112,7 +125,8 @@ ylog <- res$ylog
 
 Load results and get a proportion for each
 ```{r}
-resultFileNames <- c("SN1-17_Run_14.xls", "SN1-21_Run_17.xls","SN1-23-Run_18.xls","SN1-25-Run_19.xls", "SN1-26-Run_20.xls")
+#resultFileNames <- c("SN1-17_Run_14.xls", "SN1-21_Run_17.xls","SN1-23-Run_18.xls","SN1-25-Run_19.xls", "SN1-26-Run_20.xls")
+resultFileNames <- c("Run_15.xls", "Run_16.xls","Run_17.xls","Run_18.xls", "Run_19.xls", "Run_20.xls")
 for (i in 1:length(resultFileNames)){
   res <- readResultFile(resultFileNames[i], TRUE)
   namesOfColumns <- names(res$proportions)
@@ -134,9 +148,10 @@ rownames(totalTableOflogMeans) <- totalTableOflogMeans$Target
 
 (1) Get dangling ends
 ```{r}
-prepared_data <- data.frame(Target = character(172))
+prepared_data <- data.frame(Target = character(nrow(data)))
 prepared_data$Target <- data$Amplicon_ID
 
+prepared_data$Ten <- data$Amplicon_Inner_Part10
 prepared_data$Start_Dangling_End <- data$Start_Dangling_End
 prepared_data$Stop_Dangling_End <- data$Stop_Dangling_End
 prepared_data$Start_Dangling_End <- as.factor(prepared_data$Start_Dangling_End)
@@ -276,8 +291,7 @@ thermoblast_data$Concentration <- rep(0.0000001, nrow(thermoblast_data))
 thermoblast_data$StrandType <- rep("DNA", nrow(thermoblast_data))
 thermoblast_data$Function <- rep("PRIMER", nrow(thermoblast_data))
 thermoblast_data$Name <- c(paste(valid_amplicons$Amplicon_ID, "_Fwd", sep=""), paste(valid_amplicons$Amplicon_ID, "_Rev", sep=""))
-write.csv(thermoblast_data[1:100,], "../data/ForThermoBLAST1_p.csv", row.names=FALSE)
-write.csv(thermoblast_data[101:200,], "../data/ForThermoBLAST2_p.csv", row.names=FALSE)
+write.csv(thermoblast_data, "../data/panel2/ForThermoBLAST.csv", row.names=FALSE)
 ```
 
 Save features to tsv file
@@ -287,6 +301,6 @@ prepared_data$logres <- ylog[,2]
 prepared_data$sd <- totalTable$sd
 prepared_data$mean <- totalTable$mean
 prepared_data$MeansSD <- totalTableOfMeans$sd
-write.table(prepared_data, "../data/features.tsv", col.names = TRUE, sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(prepared_data, "../data/panel2/features.tsv", col.names = TRUE, sep = "\t", row.names = FALSE, quote = FALSE)
 ```
 

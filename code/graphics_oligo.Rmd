@@ -12,41 +12,57 @@ prepared_data <- read.table("../data/features_oligo.tsv", sep = "\t", header=TRU
 totalTable <- NULL
 totalTable$sd <- prepared_data$sd
 totalTable$mean <- prepared_data$mean
+prepared_data$Start_Dangling_End <- as.numeric(prepared_data$Start_Dangling_End)
+prepared_data$Stop_Dangling_End <- as.numeric(prepared_data$Stop_Dangling_End) 
+prepared_data$Start_Dangling_End <- as.numeric(prepared_data$Fwd_END_3)
+prepared_data$Stop_Dangling_End <- as.numeric(prepared_data$Rev_END_3) 
 ```
 
-(3) Graphics for foward primer features
 ```{r}
 library(lattice)
+xyplot(totalTable$mean ~ prepared_data$Tm,  xlab="Tm", ylab="mean of amplicon percental amount", main="Min")
+xyplot(totalTable$mean ~ prepared_data$dG,  xlab="dG", ylab="mean of amplicon percental amount", main="Min")
+xyplot(totalTable$sd ~ prepared_data$Tm,  xlab="Tm", ylab="sd of amplicon percental amount", main="Min")
+xyplot(totalTable$sd ~ prepared_data$dG,  xlab="dG", ylab="sd of amplicon percental amount", main="Min")
+```
+(3) Graphics for foward primer features
+```{r}
+
 xyplot(totalTable$mean ~ prepared_data$Tm_fwd,  xlab="Tm", ylab="mean of amplicon percental amount", main="Forward Primer")
-xyplot(totalTable$mean ~ prepared_data$dG_fwd,  xlab="dG", ylab="mean of amplicon percental amount", main="Forward Primer ")
+xyplot(totalTable$mean ~ prepared_data$dG0_fwd,  xlab="dG0", ylab="mean of amplicon percental amount", main="Forward Primer ")
 xyplot(log(totalTable$mean) ~ prepared_data$dH_fwd,  xlab="dH", ylab="mean of amplicon percental amount", main="Forward Primer")
 xyplot(log(totalTable$mean) ~ prepared_data$dS_fwd,  xlab="dS", ylab="mean of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$mean ~ prepared_data$dG_fwd,  xlab="dG", ylab="mean of amplicon percental amount", main="Forward Primer ")
 
 ```
 
 (3) Graphics for foward primer features
 ```{r}
-xyplot(totalTable$mean ~ prepared_data$Tm_fwd,  xlab="Tm", ylab="mean of amplicon percental amount", main="Forward Primer")
-xyplot(totalTable$mean ~ prepared_data$dG_fwd,  xlab="dG", ylab="mean of amplicon percental amount", main="Forward Primer ")
-xyplot(log(totalTable$mean) ~ prepared_data$dH_fwd,  xlab="dH", ylab="mean of amplicon percental amount", main="Forward Primer")
-xyplot(log(totalTable$mean) ~ prepared_data$dS_fwd,  xlab="dS", ylab="mean of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$sd ~ prepared_data$Tm_fwd,  xlab="Tm", ylab="sd of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$sd ~ prepared_data$dG0_fwd,  xlab="dG0", ylab="sd of amplicon percental amount", main="Forward Primer ")
+xyplot(totalTable$sd ~ prepared_data$dH_fwd,  xlab="dH", ylab="sd of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$sd ~ prepared_data$dS_fwd,  xlab="dS", ylab="sd of amplicon percental amount", main="Forward Primer")
+xyplot(totalTable$sd ~ prepared_data$dG_fwd,  xlab="dG", ylab="sd of amplicon percental amount", main="Forward Primer ")
+```
+
+(3) Graphics for reverse primer features
+```{r}
+xyplot(totalTable$mean ~ prepared_data$Tm_rev,  xlab="Tm", ylab="mean of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$mean ~ prepared_data$dG0_rev,  xlab="dG0", ylab="mean of amplicon percental amount", main="Reverse Primer ")
+xyplot(totalTable$mean ~ prepared_data$dH_rev,  xlab="dH", ylab="mean of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$mean ~ prepared_data$dS_rev,  xlab="dS", ylab="mean of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$mean ~ prepared_data$dG_rev,  xlab="dG", ylab="mean of amplicon percental amount", main="Reverse Primer ")
 
 ```
 
 (3) Graphics for reverse primer features
 ```{r}
-xyplot(totalTable$sd ~ prepared_data$Tm_rev,  xlab="Tm", ylab="sd of amplicon percental amount", main="Reverse Primer")
-xyplot(totalTable$sd ~ prepared_data$dG_rev,  xlab="dG", ylab="sd of amplicon percental amount", main="Reverse Primer ")
-xyplot(log(totalTable$sd) ~ prepared_data$dH_rev,  xlab="dH", ylab="sd of amplicon percental amount", main="Reverse Primer")
-xyplot(log(totalTable$sd) ~ prepared_data$dS_rev,  xlab="dS", ylab="sd of amplicon percental amount", main="Reverse Primer")
-```
 
-(3) Graphics for reverse primer features
-```{r}
 xyplot(totalTable$sd ~ prepared_data$Tm_rev,  xlab="Tm", ylab="sd of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$sd ~ prepared_data$dG0_rev,  xlab="dG0", ylab="sd of amplicon percental amount", main="Reverse Primer ")
+xyplot(totalTable$sd ~ prepared_data$dH_rev,  xlab="dH", ylab="sd of amplicon percental amount", main="Reverse Primer")
+xyplot(totalTable$sd ~ prepared_data$dS_rev,  xlab="dS", ylab="sd of amplicon percental amount", main="Reverse Primer")
 xyplot(totalTable$sd ~ prepared_data$dG_rev,  xlab="dG", ylab="sd of amplicon percental amount", main="Reverse Primer ")
-xyplot(log(totalTable$sd) ~ prepared_data$dH_rev,  xlab="dH", ylab="sd of amplicon percental amount", main="Reverse Primer")
-xyplot(log(totalTable$sd) ~ prepared_data$dS_rev,  xlab="dS", ylab="sd of amplicon percental amount", main="Reverse Primer")
 ```
 
 Different feature selection tests
@@ -56,15 +72,6 @@ library(FSelector)
 histogram(prepared_data$sd)
 sd(prepared_data$sd)
 formula <- sd ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash + Tm_fwd +dG_fwd +dH_fwd +dS_fwd + Tm_rev +dG_rev +dH_rev +dS_rev
-chi.squared(formula, data = prepared_data)
-chi <- chi.squared(formula, data = prepared_data)
-chi$names <- rownames(chi)
-chi <- chi[order(-chi$attr_importance), ]
-barchart( chi$names ~ chi$attr_importance, main = "Chi-squared test", xlab = "Feature improtance")
-information.gain(formula, data = prepared_data)
-gain.ratio(formula, data = prepared_data)
-symmetrical.uncertainty(formula, data = prepared_data)
-oneR(formula, data = prepared_data)
 random.forest.importance(formula, data = prepared_data, importance.type = 1)
 ```
 
@@ -74,15 +81,6 @@ library(FSelector)
 histogram(prepared_data$mean)
 sd(prepared_data$mean)
 formula <- mean ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash + Tm_fwd +dG_fwd +dH_fwd +dS_fwd + Tm_rev +dG_rev +dH_rev +dS_rev
-chi.squared(formula, data = prepared_data)
-chi <- chi.squared(formula, data = prepared_data)
-chi$names <- rownames(chi)
-chi <- chi[order(-chi$attr_importance), ]
-barchart( chi$names ~ chi$attr_importance, main = "Chi-squared test", xlab = "Feature improtance")
-information.gain(formula, data = prepared_data)
-gain.ratio(formula, data = prepared_data)
-symmetrical.uncertainty(formula, data = prepared_data)
-oneR(formula, data = prepared_data)
 random.forest.importance(formula, data = prepared_data, importance.type = 1)
 ```
 

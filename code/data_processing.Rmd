@@ -7,6 +7,23 @@ totalTable$sd <- prepared_data$sd
 totalTable$mean <- prepared_data$mean
 totalTableOfMeans <- NULL
 totalTableOfMeans$sd <- prepared_data$MeansSD
+#prepared_data$Ten <- as.numeric(prepared_data$Ten)
+prepared_data$Start_Dangling_End <- as.numeric(prepared_data$Start_Dangling_End)
+prepared_data$Stop_Dangling_End <- as.numeric(prepared_data$Stop_Dangling_End) 
+prepared_data$Start_Dangling_End <- as.numeric(prepared_data$Fwd_END_3)
+prepared_data$Stop_Dangling_End <- as.numeric(prepared_data$Rev_END_3) 
+
+prepared_data_num <- prepared_data
+prepared_data_num$Start_Dangling_End <- as.numeric(prepared_data_num$Start_Dangling_End)
+prepared_data_num$Stop_Dangling_End <- as.numeric(prepared_data_num$Stop_Dangling_End)
+prepared_data_num$Fwd_END_3 <- as.numeric(prepared_data_num$Fwd_END_3)
+prepared_data_num$Rev_END_3 <- as.numeric(prepared_data_num$Rev_END_3)
+prepared_data_num$res <- NULL
+prepared_data_num$logres <- NULL
+prepared_data_num$MeansSD <- NULL
+print(ncol(prepared_data_num))
+prepared_data.scale<- scale(prepared_data_num[2:ncol(prepared_data_num)], center=TRUE, scale=TRUE)
+prepared_data[,names(prepared_data.scale)] <- prepared_data.scale
 ```
 
 
@@ -33,10 +50,10 @@ rf <- randomForest(formula, trainSet)
 importance(rf)
 fit <- lm(formula, data=trainSet)
 #plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse(predicted - testSet$mean)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$mean)
+#predicted <- predict(fit, newdata = testSet)
+#rmse(predicted - testSet$mean)
+#predicted <- predict(rf, newdata = testSet)
+#rmse(predicted - testSet$mean)
 ```
 
 Use all features to train model for sd
@@ -44,12 +61,12 @@ Use all features to train model for sd
 formula <- sd ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
 rf <- randomForest(formula, trainSet)
 importance(rf)
-fit <- lm(formula, data=trainSet)
+#fit <- lm(formula, data=trainSet)
 #plot(fit)
-predicted <- predict(fit, newdata = testSet)
-rmse(predicted - testSet$sd)
-predicted <- predict(rf, newdata = testSet)
-rmse(predicted - testSet$sd)
+#predicted <- predict(fit, newdata = testSet)
+#rmse(predicted - testSet$sd)
+#predicted <- predict(rf, newdata = testSet)
+#rmse(predicted - testSet$sd)
 ```
 
 
@@ -59,7 +76,7 @@ library(lattice)
 library(FSelector)
 histogram(prepared_data$sd)
 sd(prepared_data$sd)
-formula <- sd ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
+formula <- sd ~ Amplicon_Len + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len + Rev_Primer_Len + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
 chi.squared(formula, data = prepared_data)
 chi <- chi.squared(formula, data = prepared_data)
 chi$names <- rownames(chi)
@@ -69,6 +86,25 @@ information.gain(formula, data = prepared_data)
 gain.ratio(formula, data = prepared_data)
 symmetrical.uncertainty(formula, data = prepared_data)
 oneR(formula, data = prepared_data)
+formula <- sd ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
+random.forest.importance(formula, data = prepared_data, importance.type = 1)
+```
+
+```{r}
+library(lattice)
+library(FSelector)
+sd(prepared_data$MeansSD)
+formula <- MeansSD ~ Amplicon_Len + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len + Rev_Primer_Len + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash
+chi.squared(formula, data = prepared_data)
+chi <- chi.squared(formula, data = prepared_data)
+chi$names <- rownames(chi)
+chi <- chi[order(-chi$attr_importance), ]
+barchart( chi$names ~ chi$attr_importance, main = "Chi-squared test", xlab = "Feature improtance")
+information.gain(formula, data = prepared_data)
+gain.ratio(formula, data = prepared_data)
+symmetrical.uncertainty(formula, data = prepared_data)
+oneR(formula, data = prepared_data)
+formula <- MeansSD ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End  + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
 random.forest.importance(formula, data = prepared_data, importance.type = 1)
 ```
 
@@ -76,7 +112,7 @@ random.forest.importance(formula, data = prepared_data, importance.type = 1)
 library(FSelector)
 histogram(prepared_data$mean)
 sd(prepared_data$mean)
-formula <- mean ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
+formula <- mean ~ Amplicon_Len + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len + Rev_Primer_Len + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Hash + Rev_Primer_Hash  + Amplicon_Hash
 chi.squared(formula, data = prepared_data)
 chi <- chi.squared(formula, data = prepared_data)
 chi$names <- rownames(chi)
@@ -86,6 +122,7 @@ information.gain(formula, data = prepared_data)
 gain.ratio(formula, data = prepared_data)
 symmetrical.uncertainty(formula, data = prepared_data)
 oneR(formula, data = prepared_data)
+formula <- mean ~ Amplicon_Len + Amplicon_GC_content + Fwd_END_3 + Rev_END_3+Start_Dangling_End+Stop_Dangling_End + Fwd_Primer_Len +Fwd_Primer_GC_content+ Rev_Primer_Len +Rev_Primer_GC_content + Fwd_Primer_MaxPolyX + Rev_Primer_MaxPolyX + Amplicon_MaxPolyX + Fwd_Primer_Entropy + Rev_Primer_Entropy + Amplicon_Entropy + Fwd_Primer_Hash + Rev_Primer_Hash + Amplicon_Hash 
 random.forest.importance(formula, data = prepared_data, importance.type = 1)
 ```
 
@@ -114,17 +151,38 @@ library(caret)
 # print(importance)
 # # plot importance
 # plot(importance)
-evaluator <- function(subset) {
-    formula <- mean ~ . 
-    valid_names <- c(subset,"res")
-    rf <- randomForest(formula, prepared_data[,valid_names])
-    result <- cvFit(rf, data =  prepared_data[,valid_names], y =  prepared_data[,valid_names]$res, cost = rtmspe,
+evaluator <- function(subset) { 
+    valid_names <- c(subset,"mean")
+    dt <- prepared_data[,valid_names]
+    rf <- lm(mean ~ ., dt)
+    result <- cvFit(rf, data =  dt, y =  dt$mean, cost = rtmspe,
         K = 5, R = 10, costArgs = list(trim = 0.1), seed = 1234)
-    return(1-result$cv)
+    print(valid_names)
+    print(-result$cv)
+    return(-result$cv)
 }
 
 #perform the best subset search
 #subset <- exhaustive.search(names(prepared_data[-c(1, 11)]), evaluator)
 #subset <- best.first.search(names(prepared_data[-c(1, 11)]), evaluator)
+
+#MEAN
+#"Amplicon_Len"      "Amplicon_MaxPolyX" "Amplicon_Entropy" 
+#"Rev_Primer_Len"     "Amplicon_Len"       "Amplicon_MaxPolyX"  "Rev_Primer_Entropy" "Amplicon_Entropy"  
+#"Amplicon_Len"      "Amplicon_MaxPolyX" "Amplicon_Entropy"  "Amplicon_Hash"   
+
+#"Amplicon_Len"          "Fwd_Primer_GC_content" "Amplicon_MaxPolyX"     "Amplicon_Entropy"  
+#"Amplicon_Len"          "Fwd_Primer_GC_content" "Amplicon_MaxPolyX"     "Amplicon_Entropy"  
+#"Amplicon_Len"          "Fwd_Primer_GC_content" "Amplicon_Entropy" 
+
+
+
+#SD
+
+#"Amplicon_Len"     "Amplicon_Entropy" "Amplicon_Hash"  
+#"Amplicon_Len"     "Amplicon_Entropy"
+#"Amplicon_Len"     "Amplicon_Entropy" "Amplicon_Hash" 
+
+#"Amplicon_MaxPolyX"
 ```
 

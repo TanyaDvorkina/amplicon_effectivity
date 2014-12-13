@@ -55,13 +55,15 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <div id="data-preparation" class="section level2">
 <h2>Data preparation</h2>
 <p>Сonvert data to csv format to read it easily with R and remove unuseful columns from it</p>
-<pre class="r"><code>data &lt;- read.csv(&quot;../data/IAD30284_384WellPlateDataSheet.csv&quot;, header = TRUE, skip = 14)
+<pre class="r"><code>#data &lt;- read.csv(&quot;../data/IAD30284_384WellPlateDataSheet.csv&quot;, header = TRUE, skip = 14)
+data &lt;- read.csv(&quot;../data/panel2/IAD39777_51_384WellPlateDataSheet.csv&quot;, header = TRUE, skip = 9)
 data &lt;- data[data$Amplicon_ID != &quot;Blank&quot;, ]
 data$X384Well_Row &lt;- NULL
 data$X384Well_Col &lt;- NULL
 data$Gene_Symbol &lt;- NULL
 data$Genome_Version &lt;- NULL
-data$LineItem_Type &lt;- NULL</code></pre>
+data$LineItem_Type &lt;- NULL
+data &lt;-data[complete.cases(data), ]</code></pre>
 <p>Get amplicon sequence that lies between primers</p>
 <pre class="r"><code>library(jsonlite)</code></pre>
 <pre><code>## 
@@ -76,23 +78,35 @@ chromosomes &lt;- data$Chr
 beginings &lt;- data$Insert_Start
 endings &lt;- data$Insert_Stop
 ampliconInnerPart &lt;- rep(&quot;&quot;, n)
-for (i in 1:n){
-  call &lt;- paste(c(&quot;http://178.79.134.178/refservice/references/GRCh37.p13/sequence?contig=&quot;, as.character(chromosomes[i]),
-                         &quot;&amp;start=&quot;,as.character(beginings[i]),&quot;&amp;end=&quot;,as.character(endings[i])), collapse = &quot;&quot;)
-  call
-  jsonData &lt;- fromJSON(call)
-  ampliconInnerPart[i] &lt;- jsonData$sequence
-}
+ampliconInnerPart10 &lt;- rep(&quot;&quot;, n)
+unvalid &lt;- NULL
+for (i in 1:n)
+  if (endings[i]-beginings[i]&lt;=4000) {
+    call &lt;- paste(c(&quot;http://178.79.134.178/refservice/references/GRCh37.p13/sequence?contig=&quot;, as.character(chromosomes[i]),
+                           &quot;&amp;start=&quot;,as.character(beginings[i]),&quot;&amp;end=&quot;,as.character(endings[i])), collapse = &quot;&quot;)
+    jsonData &lt;- fromJSON(call)
+    ampliconInnerPart[i] &lt;- jsonData$sequence
+    ampliconInnerPart10[i] &lt;- substr(jsonData$sequence, 10, 10)
+  }else{
+    unvalid &lt;- c(unvalid, i)
+  }
+print(unvalid)</code></pre>
+<pre><code>## [1] 97</code></pre>
+<pre class="r"><code>data &lt;- data[-unvalid, ]
+ampliconInnerPart &lt;- ampliconInnerPart[-unvalid]
+ampliconInnerPart10 &lt;- ampliconInnerPart10[-unvalid]
 head(ampliconInnerPart)</code></pre>
-<pre><code>## [1] &quot;TGTTTTCTTTGATCTTACAGTTGTTATTAATTGTGATTGGAGCTATAGCAGTTGTCGCAGTTTTACAACCCTACATCTTTGTTGCAACAGTGCCAGTGATAGTGGCTTTTATTATGTTGAGAGCATATTTCCTCCAAACCTCACAGCAACTCAAACAACTGGAATCTGAAG&quot; 
-## [2] &quot;AATGCATTAATGCTATTCTGATTCTATAATATGTTTTTGCTCTCTTTTATAAATAGGATTTCTTACAAAAGCAAGAATATAAGACATTGGAATATAACTTAACGACTACAGAAGTAGTGATGGA&quot;                                                
-## [3] &quot;ATGGGGCTAATCTGGGAGTTGTTACAGGCGTCTGCCTTCTGTGGACTTGGTTTCCTGATAGTCCTTGCCCTTTTTCAGGCTGGGCTAGGGAGAATGATGATGAAGTACAGGTAGCAACCTATTTTCATAACTTGAAAGTTTTAAAAATTATGTTTTCAAAAAGCCCAC&quot;    
-## [4] &quot;ACATAAAACAAGCATCTATTGAAAATATCTGACAAACTCATCTTTTATTTTTGATGTGTGTGTGTGTGTGTGTGTGTTTTTTTAACAGGGATTTGGGGAATTATTTGAGAAAGCAAAACAAAACAATAACAATAGAAAAACTTCTAATGGTGATGACAGCCTCTTCTTCAGT&quot;
-## [5] &quot;CAGGCAAGGTAGTTCTTTTGTTCTTCACTATTAAGAACTTAATTTGGTGTCCATGTCTCTTTTTTTTTCTAGTTTGTAGTGCTGGAAGGTATTTTTGGAGAAATTCTTAC&quot;                                                              
-## [6] &quot;AGTTCATTGACATGCCAACAGAAGGTAAACCTACCAAGTCAACCAAACCATACAAGAATGGCCAACTCTCGAAAGTTATGATTA&quot;</code></pre>
-<pre class="r"><code>data$Amplicon_Inner_Part &lt;- ampliconInnerPart</code></pre>
+<pre><code>## [1] &quot;TGTTTTCTTTGATCTTACAGTTGTTATTAATTGTGATTGGAGCTATAGCAGTTGTCGCAGTTTTACAACCCTACATCTTTGTTGCAACAGTGCCAGTGATAGTGGCTTTTATTATGTTGAGAGCATATTTCCTCCAAACCTCACAGCAACTCAAACAACTGGAATCTGAAG&quot;
+## [2] &quot;TCTGAATGCGTCTACTGTGATCCAAACTTAGTATTGAATATATTGATATATCTTTAAAAAATTAGTGTTTTTTGAGGAATTTGTCATCTTGTATATTATAGGTGGGATTCTTAATAGATTCTCCAAA&quot;                                            
+## [3] &quot;ATGGGGCTAATCTGGGAGTTGTTACAGGCGTCTGCCTTCTGTGGACTTGGTTTCCTGATAGTCCTTGCCCTTTTTCAGGCTGGGCTAGGGAGAATGATGATGAAGTACAGGTAGCAACCTATTTTCATAACTTGAAAGTTTTAAAAATTATGTTTTCAAAAAGCCCAC&quot;   
+## [4] &quot;AAGTGACAAATAGCAAGTGTTGCATTTTACAAGTTATTTTTTAGGAAGCATCAAACTAATTGTGAAATTGTCTGCCATTCTTAAAAACAAAAATGTTGTTATTTTTATTTCAGATGCGATCTGTGAGCCGAGTCTTTA&quot;                                 
+## [5] &quot;ATGTAATTTAATTTCCATTTTCTTTTTAGAGCAGTATACAAAGATGCTGATTTGTATTTATTAGACTCTCCTTTTGGATACCTAGATGTTTTAACAGAAAAAGAAATATTTGAAAGGTATGTTCTTTGAATACCTTACTTATAATGCTCATGCTAAAATAAAAGAA&quot;     
+## [6] &quot;AGTATTGGACAACTTGTTAGTCTCCTTTCCAACAACCTGAACAAATTTGATGAAGTATGTACCTATTGATTTAATCTTTTAGGCACTATTGTTAT&quot;</code></pre>
+<pre class="r"><code>data$Amplicon_Inner_Part &lt;- ampliconInnerPart
+data$Amplicon_Inner_Part10 &lt;- ampliconInnerPart10</code></pre>
 <p>Get dangling ends</p>
-<pre class="r"><code>danglingEndStart &lt;- rep(&quot;&quot;, n)
+<pre class="r"><code>n &lt;- nrow(data)
+danglingEndStart &lt;- rep(&quot;&quot;, n)
 danglingEndStop &lt;- rep(&quot;&quot;, n)
 for (i in 1:n){
   call &lt;- paste(c(&quot;http://178.79.134.178/refservice/references/GRCh37.p13/sequence?contig=&quot;, as.character(chromosomes[i]),
@@ -107,10 +121,10 @@ for (i in 1:n){
 data$Start_Dangling_End &lt;- danglingEndStart
 data$Stop_Dangling_End &lt;- danglingEndStop</code></pre>
 <p>Load results and get a proportion for each</p>
-<pre class="r"><code>res &lt;- readResultFile(&quot;result.csv&quot;,TRUE, &quot;,&quot;)
-totalTable &lt;- data.frame(Target = character(127))
-totalTableOfMeans &lt;- data.frame(Target = character(127))
-totalTableOflogMeans &lt;- data.frame(Target = character(127))
+<pre class="r"><code>res &lt;- readResultFile(&quot;Run_14.xls&quot;,TRUE)
+totalTable &lt;- data.frame(Target = character(nrow(res$proportions)))
+totalTableOfMeans &lt;- data.frame(Target = character(nrow(res$proportions)))
+totalTableOflogMeans &lt;- data.frame(Target = character(nrow(res$proportions)))
 namesOfColumns &lt;- names(res$proportions)
 totalTable[namesOfColumns] &lt;- res$proportions[namesOfColumns]
 namesOfColumns &lt;- names(res$y)
@@ -119,7 +133,8 @@ totalTableOflogMeans[namesOfColumns] &lt;- res$ylog
 y &lt;- res$y
 ylog &lt;- res$ylog</code></pre>
 <p>Load results and get a proportion for each</p>
-<pre class="r"><code>resultFileNames &lt;- c(&quot;SN1-17_Run_14.xls&quot;, &quot;SN1-21_Run_17.xls&quot;,&quot;SN1-23-Run_18.xls&quot;,&quot;SN1-25-Run_19.xls&quot;, &quot;SN1-26-Run_20.xls&quot;)
+<pre class="r"><code>#resultFileNames &lt;- c(&quot;SN1-17_Run_14.xls&quot;, &quot;SN1-21_Run_17.xls&quot;,&quot;SN1-23-Run_18.xls&quot;,&quot;SN1-25-Run_19.xls&quot;, &quot;SN1-26-Run_20.xls&quot;)
+resultFileNames &lt;- c(&quot;Run_15.xls&quot;, &quot;Run_16.xls&quot;,&quot;Run_17.xls&quot;,&quot;Run_18.xls&quot;, &quot;Run_19.xls&quot;, &quot;Run_20.xls&quot;)
 for (i in 1:length(resultFileNames)){
   res &lt;- readResultFile(resultFileNames[i], TRUE)
   namesOfColumns &lt;- names(res$proportions)
@@ -139,9 +154,10 @@ rownames(totalTableOflogMeans) &lt;- totalTableOflogMeans$Target</code></pre>
 <ol style="list-style-type: decimal">
 <li>Get dangling ends</li>
 </ol>
-<pre class="r"><code>prepared_data &lt;- data.frame(Target = character(172))
+<pre class="r"><code>prepared_data &lt;- data.frame(Target = character(nrow(data)))
 prepared_data$Target &lt;- data$Amplicon_ID
 
+prepared_data$Ten &lt;- data$Amplicon_Inner_Part10
 prepared_data$Start_Dangling_End &lt;- data$Start_Dangling_End
 prepared_data$Stop_Dangling_End &lt;- data$Stop_Dangling_End
 prepared_data$Start_Dangling_End &lt;- as.factor(prepared_data$Start_Dangling_End)
@@ -180,7 +196,7 @@ prepared_data$Amplicon_MaxPolyX &lt;- as.numeric(lapply(as.character(data$Amplic
 prepared_data$Rev_Primer_Entropy &lt;- as.numeric(lapply(as.character(data$Ion_AmpliSeq_Rev_Primer.), function(x) getEntropy(x)))
 prepared_data$Amplicon_Entropy &lt;- as.numeric(lapply(as.character(data$Amplicon_Inner_Part), function(x) getEntropy(x)))
 print(head(prepared_data$Amplicon_Entropy))</code></pre>
-<pre><code>## [1] 0.3467282 0.3504628 0.3452297 0.3490609 0.3482708 0.3462790</code></pre>
+<pre><code>## [1] 0.3467282 0.3504135 0.3452297 0.3493996 0.3509972 0.3489962</code></pre>
 <ol start="2" style="list-style-type: decimal">
 <li>Get hash of primer and amplicon sequences</li>
 </ol>
@@ -205,15 +221,14 @@ thermoblast_data$Concentration &lt;- rep(0.0000001, nrow(thermoblast_data))
 thermoblast_data$StrandType &lt;- rep(&quot;DNA&quot;, nrow(thermoblast_data))
 thermoblast_data$Function &lt;- rep(&quot;PRIMER&quot;, nrow(thermoblast_data))
 thermoblast_data$Name &lt;- c(paste(valid_amplicons$Amplicon_ID, &quot;_Fwd&quot;, sep=&quot;&quot;), paste(valid_amplicons$Amplicon_ID, &quot;_Rev&quot;, sep=&quot;&quot;))
-write.csv(thermoblast_data[1:100,], &quot;../data/ForThermoBLAST1_p.csv&quot;, row.names=FALSE)
-write.csv(thermoblast_data[101:200,], &quot;../data/ForThermoBLAST2_p.csv&quot;, row.names=FALSE)</code></pre>
+write.csv(thermoblast_data, &quot;../data/panel2/ForThermoBLAST.csv&quot;, row.names=FALSE)</code></pre>
 <p>Save features to tsv file</p>
 <pre class="r"><code>prepared_data$res &lt;- y[,2]
 prepared_data$logres &lt;- ylog[,2]
 prepared_data$sd &lt;- totalTable$sd
 prepared_data$mean &lt;- totalTable$mean
 prepared_data$MeansSD &lt;- totalTableOfMeans$sd
-write.table(prepared_data, &quot;../data/features.tsv&quot;, col.names = TRUE, sep = &quot;\t&quot;, row.names = FALSE, quote = FALSE)</code></pre>
+write.table(prepared_data, &quot;../data/panel2/features.tsv&quot;, col.names = TRUE, sep = &quot;\t&quot;, row.names = FALSE, quote = FALSE)</code></pre>
 </div>
 
 
